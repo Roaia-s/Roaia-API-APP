@@ -1,5 +1,5 @@
 ﻿global using Roaia.Core.Models;
-global using Roaia.Const;
+global using Roaia.Core.Const;
 global using Roaia.Data;
 global using Roaia.Helpers;
 global using Roaia.Seeds;

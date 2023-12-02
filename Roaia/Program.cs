@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,7 +17,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 
 //Add Identity
 builder.Services
-    .AddIdentity<ApplicationUser, IdentityRole>(options => options.SignIn.RequireConfirmedAccount = true)
+    .AddIdentity<ApplicationUser, IdentityRole>(options => options.SignIn.RequireConfirmedAccount = false)
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
@@ -43,7 +42,7 @@ builder.Services
     })
     .AddJwtBearer(options =>
     {
-        options.SaveToken = true;
+        options.SaveToken = false;
         options.RequireHttpsMetadata = false;
         options.TokenValidationParameters = new TokenValidationParameters()
         {
@@ -52,6 +51,7 @@ builder.Services
             ValidIssuer = builder.Configuration["JWT:Issuer"],
             ValidAudience = builder.Configuration["JWT:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT:Key"]))
+
         };
     });
 

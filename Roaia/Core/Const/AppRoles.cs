@@ -1,4 +1,4 @@
-﻿namespace Roaia.Const;
+﻿namespace Roaia.Core.Const;
 
 public static class AppRoles
 {
