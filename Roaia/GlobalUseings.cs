@@ -1,0 +1,9 @@
+﻿global using Roaia.Core.Models;
+global using Roaia.Const;
+global using Roaia.Data;
+global using Roaia.Helpers;
+global using Roaia.Seeds;
+global using Roaia.Services;
+global using Microsoft.AspNetCore.Identity;
+global using Microsoft.EntityFrameworkCore;
+global using System.ComponentModel.DataAnnotations;
