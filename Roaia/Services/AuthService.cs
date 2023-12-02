@@ -49,6 +49,10 @@ public class AuthService(UserManager<ApplicationUser> userManager,
 
         var jwtSecurityToken = await CreateJwtToken(user);
 
+        var refreshToken = GenerateRefreshToken();
+        user.RefreshTokens?.Add(refreshToken);
+        await _userManager.UpdateAsync(user);
+
         return new Auth
         {
             Email = user.Email,
@@ -56,7 +60,9 @@ public class AuthService(UserManager<ApplicationUser> userManager,
             IsAuthenticated = true,
             Roles = new List<string> { "User" },
             Token = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken),
-            Username = user.UserName
+            Username = user.UserName,
+            RefreshToken = refreshToken.Token,
+            RefreshTokenExpiration = refreshToken.ExpiresOn
         };
     
     }

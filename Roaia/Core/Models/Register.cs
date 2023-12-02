@@ -19,4 +19,6 @@ public class Register
 
     [MaxLength(20)]
     public string PhoneNumber { get; set; }= null!;
+    
+    public IFormFile? ImageUrl { get; set; }
 }

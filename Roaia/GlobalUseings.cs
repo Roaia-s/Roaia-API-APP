@@ -6,5 +6,7 @@ global using Roaia.Seeds;
 global using Roaia.Services;
 global using Microsoft.AspNetCore.Identity;
 global using Microsoft.EntityFrameworkCore;
-global using System.ComponentModel.DataAnnotations;
 global using Microsoft.AspNetCore.Authorization;
+global using Microsoft.AspNetCore.Authentication.JwtBearer;
+global using Microsoft.IdentityModel.Tokens;
+global using System.ComponentModel.DataAnnotations;

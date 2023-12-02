@@ -4,17 +4,28 @@ using Microsoft.AspNetCore.Mvc;
 namespace Roaia.Controllers;
 [Route("api/[controller]")]
 [ApiController]
-public class AuthController(IAuthService authService) : ControllerBase
+public class AuthController(IAuthService authService, IImageService imageService) : ControllerBase
 {
     private readonly IAuthService _authService = authService;
+    private readonly IImageService _imageService = imageService;
 
     // Route -> Register
     [HttpPost("register")]
-    public async Task<IActionResult> RegisterAsync([FromBody] Register model)
+    public async Task<IActionResult> RegisterAsync([FromForm] Register model)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
+        if (model.ImageUrl is not null)
+        {
+            var (isUploaded, errorMessage) = await _imageService.UploadAsync(model.ImageUrl, $"{model.Username}.png", $"/images/users", hasThumbnail: false);
+
+            if (!isUploaded)
+            {
+                ModelState.AddModelError(nameof(model.ImageUrl), errorMessage);
+                return BadRequest(ModelState);
+            }
+        }
         var result = await _authService.RegisterAsync(model);
 
         if (!result.IsAuthenticated)
