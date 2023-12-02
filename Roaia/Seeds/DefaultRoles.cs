@@ -7,7 +7,7 @@ public class DefaultRoles
         if (!roleManager.Roles.Any())
         {
             await roleManager.CreateAsync(new IdentityRole(AppRoles.Admin));
-            await roleManager.CreateAsync(new IdentityRole(AppRoles.SuberAdmin));
+            await roleManager.CreateAsync(new IdentityRole(AppRoles.SuperAdmin));
             await roleManager.CreateAsync(new IdentityRole(AppRoles.User));
         }
     }
