@@ -60,6 +60,47 @@ public class AuthService(UserManager<ApplicationUser> userManager,
     
     }
 
+    public async Task<Auth> GetTokenAsync(TokenRequest model)
+    {
+        Auth auth = new();
+        var email = model.Email.ToUpper();
+        var user = await _userManager.Users
+            .SingleOrDefaultAsync(u => (u.NormalizedUserName == email || u.NormalizedEmail == email) && !u.IsDeleted);
+
+        if (user is null || !await _userManager.CheckPasswordAsync(user, model.Password))
+        {
+            auth.Message = "Email or Password is incorrect!";
+            return auth;
+        }
+
+        var jwtSecurityToken = await CreateJwtToken(user);
+        var rolesList = await _userManager.GetRolesAsync(user);
+
+        auth.IsAuthenticated = true;
+        auth.Token = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
+        auth.Email = user.Email;
+        auth.Username = user.UserName;
+        auth.ExpiresOn = jwtSecurityToken.ValidTo;
+        auth.Roles = rolesList.ToList();
+
+        return auth;
+    }
+
+    public async Task<string> AddRoleAsync(AddRole model)
+    {
+        var user = await _userManager.FindByIdAsync(model.UserId);
+
+        if (user is null || !await _roleManager.RoleExistsAsync(model.Role))
+            return "Invalid user ID or Role";
+
+        if (await _userManager.IsInRoleAsync(user, model.Role))
+            return "User already assigned to this role";
+
+        var result = await _userManager.AddToRoleAsync(user, model.Role);
+
+        return result.Succeeded ? string.Empty : "Something went wrong";
+    }
+
     private async Task<JwtSecurityToken> CreateJwtToken(ApplicationUser user)
     {
         var userClaims = await _userManager.GetClaimsAsync(user);

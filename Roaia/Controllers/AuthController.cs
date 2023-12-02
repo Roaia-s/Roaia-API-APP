@@ -21,5 +21,33 @@ public class AuthController(IAuthService authService) : ControllerBase
 
         return Ok(result);
     }
+    
+    [HttpPost("token")]
+    public async Task<IActionResult> GetTokenAsync([FromBody] TokenRequest model)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var result = await _authService.GetTokenAsync(model);
+
+        if (!result.IsAuthenticated)
+            return BadRequest(result.Message);
+
+        return Ok(result);
+    }
+    
+    [HttpPost("addrole")]
+    public async Task<IActionResult> AddRoleAsync([FromBody] AddRole model)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var result = await _authService.AddRoleAsync(model);
+
+        if (!string.IsNullOrEmpty(result))
+            return BadRequest(result);
+
+        return Ok(model);
+    }
 
 }
