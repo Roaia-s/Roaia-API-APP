@@ -1,4 +1,5 @@
 ﻿global using Roaia.Core.Models;
+global using Roaia.Core.Models.Dtos;
 global using Roaia.Core.Const;
 global using Roaia.Data;
 global using Roaia.Helpers;
@@ -10,3 +11,4 @@ global using Microsoft.AspNetCore.Authorization;
 global using Microsoft.AspNetCore.Authentication.JwtBearer;
 global using Microsoft.IdentityModel.Tokens;
 global using System.ComponentModel.DataAnnotations;
+global using System.Text.Json.Serialization;

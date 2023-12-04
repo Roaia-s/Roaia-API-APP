@@ -17,4 +17,6 @@ public class ApplicationUser : IdentityUser
     public DateTime? LastUpdatedOn { get; set; }
 
     public List<RefreshToken>? RefreshTokens { get; set; }
+
+    public string? ImageUrl { get; set; }
 }

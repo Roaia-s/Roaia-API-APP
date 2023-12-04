@@ -1,5 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using SixLabors.ImageSharp;
 
 namespace Roaia.Controllers;
 [Route("api/[controller]")]
@@ -11,22 +11,28 @@ public class AuthController(IAuthService authService, IImageService imageService
 
     // Route -> Register
     [HttpPost("register")]
-    public async Task<IActionResult> RegisterAsync([FromForm] Register model)
+    public async Task<IActionResult> RegisterAsync([FromForm] RegisterDto dto)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        if (model.ImageUrl is not null)
+
+        if (dto.ImageUrl is not null)
         {
-            var (isUploaded, errorMessage) = await _imageService.UploadAsync(model.ImageUrl, $"{model.Username}.png", $"/images/users", hasThumbnail: false);
+            var imageName = $"{Guid.NewGuid()}{Path.GetExtension(dto.ImageUrl.FileName)}";
+            var (isUploaded, errorMessage) = await _imageService.UploadAsync(dto.ImageUrl,
+                imageName,
+                $"/images/users", hasThumbnail: false);
 
             if (!isUploaded)
             {
-                ModelState.AddModelError(nameof(model.ImageUrl), errorMessage);
+                ModelState.AddModelError(nameof(dto.ImageUrl), errorMessage);
                 return BadRequest(ModelState);
             }
+
+            dto.ImageName = imageName;
         }
-        var result = await _authService.RegisterAsync(model);
+        var result = await _authService.RegisterAsync(dto);
 
         if (!result.IsAuthenticated)
             return BadRequest(result.Message);
@@ -37,13 +43,13 @@ public class AuthController(IAuthService authService, IImageService imageService
     }
 
     // Route -> Login
-    [HttpPost("token")]
-    public async Task<IActionResult> GetTokenAsync([FromBody] TokenRequest model)
+    [HttpPost("login")]
+    public async Task<IActionResult> GetTokenAsync([FromBody] TokenRequestDto dto)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var result = await _authService.GetTokenAsync(model);
+        var result = await _authService.GetTokenAsync(dto);
 
         if (!result.IsAuthenticated)
             return BadRequest(result.Message);
@@ -55,18 +61,18 @@ public class AuthController(IAuthService authService, IImageService imageService
     }
 
     // Route -> Assign User To Role
-    [HttpPost("addrole")]
-    public async Task<IActionResult> AddRoleAsync([FromBody] AddRole model)
+    [HttpPost("addRole")]
+    public async Task<IActionResult> AddRoleAsync([FromBody] AddRoleDto dto)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var result = await _authService.AddRoleAsync(model);
+        var result = await _authService.AddRoleAsync(dto);
 
         if (!string.IsNullOrEmpty(result))
             return BadRequest(result);
 
-        return Ok(model);
+        return Ok(dto);
     }
 
     [HttpGet("refreshToken")]
@@ -85,9 +91,9 @@ public class AuthController(IAuthService authService, IImageService imageService
     }
 
     [HttpPost("revokeToken")]
-    public async Task<IActionResult> RevokeToken([FromBody] RevokeToken model)
+    public async Task<IActionResult> RevokeToken([FromBody] RevokeTokenDto dto)
     {
-        var token = model.Token ?? Request.Cookies["refreshToken"];
+        var token = dto.Token ?? Request.Cookies["refreshToken"];
 
         if (string.IsNullOrEmpty(token))
             return BadRequest("Token is required!");

@@ -1,6 +1,6 @@
-﻿namespace Roaia.Core.Models;
+﻿namespace Roaia.Core.Models.Dtos;
 
-public class AddRole
+public class AddRoleDto
 {
     public string UserId { get; set; } = null!;
 

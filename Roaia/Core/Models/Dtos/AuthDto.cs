@@ -1,8 +1,6 @@
-﻿using System.Text.Json.Serialization;
+﻿namespace Roaia.Core.Models.Dtos;
 
-namespace Roaia.Core.Models;
-
-public class Auth
+public class AuthDto
 {
     public string? Message { get; set; }
     public bool IsAuthenticated { get; set; }

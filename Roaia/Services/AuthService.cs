@@ -1,6 +1,6 @@
 ﻿
 using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
+using SixLabors.ImageSharp;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -16,24 +16,25 @@ public class AuthService(UserManager<ApplicationUser> userManager,
     private readonly RoleManager<IdentityRole> _roleManager = roleManager;
     private readonly JWT _jwt = jwt.Value;
 
-    public async Task<Auth> RegisterAsync(Register model)
+    public async Task<AuthDto> RegisterAsync(RegisterDto dto)
     {
-        if (await _userManager.FindByEmailAsync(model.Email) is not null)
-            return new Auth { Message = "Email is already registered!" };
+        if (await _userManager.FindByEmailAsync(dto.Email) is not null)
+            return new AuthDto { Message = "Email is already registered!" };
 
-        if (await _userManager.FindByNameAsync(model.Username) is not null)
-            return new Auth { Message = "Username is already registered!" };
+        if (await _userManager.FindByNameAsync(dto.Username) is not null)
+            return new AuthDto { Message = "Username is already registered!" };
 
         var user = new ApplicationUser
         {
-            UserName = model.Username,
-            Email = model.Email,
-            FirstName = model.FirstName,
-            LastName = model.LastName,
-            PhoneNumber = model.PhoneNumber,
+            UserName = dto.Username,
+            Email = dto.Email,
+            FirstName = dto.FirstName,
+            LastName = dto.LastName,
+            PhoneNumber = dto.PhoneNumber,
+            ImageUrl = $"/images/books/{dto.ImageName}"
         };
 
-        var result = await _userManager.CreateAsync(user, model.Password);
+        var result = await _userManager.CreateAsync(user, dto.Password);
 
         if (!result.Succeeded)
         {
@@ -42,7 +43,7 @@ public class AuthService(UserManager<ApplicationUser> userManager,
             foreach (var error in result.Errors)
                 errors += $"{error.Description},";
 
-            return new Auth { Message = errors };
+            return new AuthDto { Message = errors };
         }
 
         await _userManager.AddToRoleAsync(user, "User");
@@ -53,7 +54,7 @@ public class AuthService(UserManager<ApplicationUser> userManager,
         user.RefreshTokens?.Add(refreshToken);
         await _userManager.UpdateAsync(user);
 
-        return new Auth
+        return new AuthDto
         {
             Email = user.Email,
             //ExpiresOn = jwtSecurityToken.ValidTo,
@@ -67,14 +68,14 @@ public class AuthService(UserManager<ApplicationUser> userManager,
     
     }
 
-    public async Task<Auth> GetTokenAsync(TokenRequest model)
+    public async Task<AuthDto> GetTokenAsync(TokenRequestDto dto)
     {
-        Auth auth = new();
-        var email = model.Email.ToUpper();
+        AuthDto auth = new();
+        var email = dto.Email.ToUpper();
         var user = await _userManager.Users
             .SingleOrDefaultAsync(u => (u.NormalizedUserName == email || u.NormalizedEmail == email) && !u.IsDeleted);
 
-        if (user is null || !await _userManager.CheckPasswordAsync(user, model.Password))
+        if (user is null || !await _userManager.CheckPasswordAsync(user, dto.Password))
         {
             auth.Message = "Email or Password is incorrect!";
             return auth;
@@ -108,17 +109,17 @@ public class AuthService(UserManager<ApplicationUser> userManager,
         return auth;
     }
 
-    public async Task<string> AddRoleAsync(AddRole model)
+    public async Task<string> AddRoleAsync(AddRoleDto dto)
     {
-        var user = await _userManager.FindByIdAsync(model.UserId);
+        var user = await _userManager.FindByIdAsync(dto.UserId);
 
-        if (user is null || !await _roleManager.RoleExistsAsync(model.Role))
+        if (user is null || !await _roleManager.RoleExistsAsync(dto.Role))
             return "Invalid user ID or Role";
 
-        if (await _userManager.IsInRoleAsync(user, model.Role))
+        if (await _userManager.IsInRoleAsync(user, dto.Role))
             return "User already assigned to this role";
 
-        var result = await _userManager.AddToRoleAsync(user, model.Role);
+        var result = await _userManager.AddToRoleAsync(user, dto.Role);
 
         return result.Succeeded ? string.Empty : "Something went wrong";
     }
@@ -155,9 +156,9 @@ public class AuthService(UserManager<ApplicationUser> userManager,
         return jwtSecurityToken;
     }
 
-    public async Task<Auth> RefreshTokenAsync(string token)
+    public async Task<AuthDto> RefreshTokenAsync(string token)
     {
-        var auth = new Auth();
+        var auth = new AuthDto();
 
         var user = await _userManager.Users.SingleOrDefaultAsync(u => u.RefreshTokens.Any(t => t.Token == token));
 
