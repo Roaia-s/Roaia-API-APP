@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 
 namespace Roaia.Controllers;
+
+[Authorize]
 [ApiController]
 [Route("[controller]")]
 public class WeatherForecastController : ControllerBase
