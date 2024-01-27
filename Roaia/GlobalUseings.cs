@@ -5,6 +5,8 @@ global using Roaia.Data;
 global using Roaia.Helpers;
 global using Roaia.Seeds;
 global using Roaia.Services;
+global using Roaia.Settings;
+global using Microsoft.AspNetCore.Identity.UI.Services;
 global using Microsoft.AspNetCore.Identity;
 global using Microsoft.EntityFrameworkCore;
 global using Microsoft.AspNetCore.Authorization;

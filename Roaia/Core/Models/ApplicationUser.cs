@@ -19,4 +19,9 @@ public class ApplicationUser : IdentityUser
     public List<RefreshToken>? RefreshTokens { get; set; }
 
     public string? ImageUrl { get; set; }
+
+    public string? ResetPasswordToken { get; set; }
+
+    public DateTime ResetPasswordTokenExpiry { get; set; }
+
 }

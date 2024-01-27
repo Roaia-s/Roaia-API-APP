@@ -19,13 +19,11 @@ public class UserFormDto
     public string LastName { get; set; } = null!;
 
     [MaxLength(20, ErrorMessage = Errors.MaxLength),
-        Remote("AllowUserName", null!, AdditionalFields = "Id", ErrorMessage = Errors.Duplicated),
         RegularExpression(RegexPatterns.UserName, ErrorMessage = Errors.InvalidUsername),
         Display(Name = "Username")]
     public string UserName { get; set; } = null!;
 
     [MaxLength(200, ErrorMessage = Errors.MaxLength),
-        Remote("User/AllowEmail", AdditionalFields = "Id", ErrorMessage = Errors.Duplicated),
         RegularExpression(RegexPatterns.Email), EmailAddress]
     public string Email { get; set; } = null!;
 
