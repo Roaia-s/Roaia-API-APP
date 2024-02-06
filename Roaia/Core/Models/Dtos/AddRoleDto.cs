@@ -2,7 +2,6 @@
 
 public class AddRoleDto
 {
-    public string UserId { get; set; } = null!;
-
-    public string Role { get; set; } = null!;
+	public required string UserId { get; set; }
+	public required string Role { get; set; }
 }

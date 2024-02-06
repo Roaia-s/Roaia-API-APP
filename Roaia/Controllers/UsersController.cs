@@ -13,10 +13,9 @@ public class UsersController(IAccountService accountService) : Controller
 	public async Task<IActionResult> GetUserInfoAsync(string userId)
 	{
 		var result = await _accountService.GetUserInformationAsync(userId);
-		if (result == null)
-		{
-			return NotFound();
-		}
+		if (result.Message is not null)
+			return NotFound(new { message = result.Message });
+
 		return Ok(result);
 	}
 }

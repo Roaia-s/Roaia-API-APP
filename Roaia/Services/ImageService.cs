@@ -8,7 +8,7 @@ public class ImageService(IWebHostEnvironment webHostEnvironment) : IImageServic
 	private List<string> _allowedExtensions = new() { ".jpg", ".jpeg", ".png" };
 	private long _maxAllowedSize = 4194304;
 
-    public async Task<(bool isUploaded, string? errorMessage)> UploadAsync(IFormFile image, string imageName, string folderPath, bool hasThumbnail)
+	public async Task<(bool isUploaded, string? errorMessage)> UploadAsync(IFormFile image, string imageName, string folderPath, bool hasThumbnail)
 	{
 		var extension = Path.GetExtension(image.FileName);
 
@@ -51,7 +51,7 @@ public class ImageService(IWebHostEnvironment webHostEnvironment) : IImageServic
 			var oldThumbPath = $"{_webHostEnvironment.WebRootPath}{imageThumbnailPath}";
 
 			if (File.Exists(oldThumbPath))
-			File.Delete(oldThumbPath);
+				File.Delete(oldThumbPath);
 		}
 	}
 }
