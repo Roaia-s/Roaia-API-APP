@@ -2,7 +2,7 @@
 
 public class ChangePasswordDto
 {
-    public string Email { get; set; } = null!;
-    public string OldPassword { get; set; } = null!;
-    public string NewPassword { get; set; } = null!;
+	public required string Email { get; set; }
+	public required string OldPassword { get; set; }
+	public required string NewPassword { get; set; }
 }

@@ -1,7 +1,4 @@
-﻿using Microsoft.AspNetCore.Hosting;
-using System.Text.Encodings.Web;
-
-namespace Roaia.Services
+﻿namespace Roaia.Services
 {
 	public class EmailBodyBuilder : IEmailBodyBuilder
 	{
@@ -12,7 +9,7 @@ namespace Roaia.Services
 			_webHostEnvironment = webHostEnvironment;
 		}
 
-		public string GetEmailBody(string imageUrl, string header, string body, string url, string linkTitle)
+		public string GetEmailBody(string imageUrl, string header, string body)
 		{
 			var filePath = $"{_webHostEnvironment.WebRootPath}/templates/email.html";
 			StreamReader str = new(filePath);
@@ -23,9 +20,7 @@ namespace Roaia.Services
 			return template
 				.Replace("[imageUrl]", imageUrl)
 				.Replace("[header]", header)
-				.Replace("[body]", body)
-				.Replace("[url]", url)
-				.Replace("[linkTitle]", linkTitle);
+				.Replace("[body]", body);
 		}
 	}
 }

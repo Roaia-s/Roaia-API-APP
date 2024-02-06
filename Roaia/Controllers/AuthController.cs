@@ -1,230 +1,204 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using SixLabors.ImageSharp;
-
 namespace Roaia.Controllers;
 [Route("api/[controller]")]
 [ApiController]
 public class AuthController(IAuthService authService, IImageService imageService) : ControllerBase
 {
-    private readonly IAuthService _authService = authService;
-    private readonly IImageService _imageService = imageService;
+	private readonly IAuthService _authService = authService;
+	private readonly IImageService _imageService = imageService;
 
-    // Route -> Register
-    [HttpPost("register")]
-    public async Task<IActionResult> RegisterAsync([FromForm] RegisterDto dto)
-    {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+	// Route -> Register
+	[HttpPost("register")]
+	public async Task<IActionResult> RegisterAsync([FromForm] RegisterDto dto)
+	{
+		if (!ModelState.IsValid)
+			return BadRequest(ModelState);
 
+		var result = await _authService.RegisterAsync(dto);
 
-        if (dto.ImageUrl is not null)
-        {
-            var imageName = $"{Guid.NewGuid()}{Path.GetExtension(dto.ImageUrl.FileName)}";
-            var (isUploaded, errorMessage) = await _imageService.UploadAsync(dto.ImageUrl,
-                imageName,
-                $"/images/users", hasThumbnail: false);
+		if (!result.IsAuthenticated)
+			return BadRequest(result.Message);
 
-            if (!isUploaded)
-            {
-                ModelState.AddModelError(nameof(dto.ImageUrl), errorMessage);
-                return BadRequest(ModelState);
-            }
+		SetRefreshTokenInCookie(result.RefreshToken, result.RefreshTokenExpiration);
 
-            dto.ImageName = imageName;
-        }
-        var result = await _authService.RegisterAsync(dto);
+		return Ok(result);
+	}
 
-        if (!result.IsAuthenticated)
-            return BadRequest(result.Message);
+	// Route -> Login
+	[HttpPost("login")]
+	public async Task<IActionResult> GetTokenAsync([FromBody] TokenRequestDto dto)
+	{
+		if (!ModelState.IsValid)
+			return BadRequest(ModelState);
 
-        SetRefreshTokenInCookie(result.RefreshToken, result.RefreshTokenExpiration);
+		var result = await _authService.GetTokenAsync(dto);
 
-        return Ok(result);
-    }
+		if (!result.IsAuthenticated)
+			return BadRequest(result.Message);
 
-    // Route -> Login
-    [HttpPost("login")]
-    public async Task<IActionResult> GetTokenAsync([FromBody] TokenRequestDto dto)
-    {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+		if (!string.IsNullOrEmpty(result.RefreshToken))
+			SetRefreshTokenInCookie(result.RefreshToken, result.RefreshTokenExpiration);
 
-        var result = await _authService.GetTokenAsync(dto);
+		return Ok(result);
+	}
 
-        if (!result.IsAuthenticated)
-            return BadRequest(result.Message);
+	[HttpPatch("modifyUser")]
+	public async Task<IActionResult> ModifiyUserAsync([FromForm] ModifyUserDto dto)
+	{
+		if (!ModelState.IsValid)
+			return BadRequest(ModelState);
 
-        if (!string.IsNullOrEmpty(result.RefreshToken))
-            SetRefreshTokenInCookie(result.RefreshToken, result.RefreshTokenExpiration);
+		var result = await _authService.ModfiyUserAsync(dto);
+		if (!result.IsAuthenticated)
+			return BadRequest(result.Message);
 
-        return Ok(result);
-    }
+		if (!string.IsNullOrEmpty(result.RefreshToken))
+			SetRefreshTokenInCookie(result.RefreshToken, result.RefreshTokenExpiration);
 
-    [HttpPatch("modifyUser")]
-    public async Task<IActionResult> ModifiyUserAsync([FromForm] ModifyUserDto dto)
-    {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+		return Ok(result);
+	}
 
-        var user = await _authService.FindByEmail(dto.Email);
+	[HttpPut("changePassword")]
+	public async Task<IActionResult> ChangePasswordAsync(ChangePasswordDto dto)
+	{
+		if (!ModelState.IsValid)
+			return BadRequest(ModelState);
 
-        if (dto.ImageUrl is not null)
-        {
-            var oldImagePath = user.ImageUrl;
-            var imageName = $"{Guid.NewGuid()}{Path.GetExtension(dto.ImageUrl.FileName)}";
-            var (isUploaded, errorMessage) = await _imageService.UploadAsync(dto.ImageUrl,
-                imageName,
-                $"/images/users", hasThumbnail: false);
+		var result = await _authService.ChangePasswordAsync(dto);
+		if (!result.IsAuthenticated)
+			return BadRequest(result.Message);
 
-            if (!isUploaded)
-            {
-                ModelState.AddModelError(nameof(dto.ImageUrl), errorMessage);
-                return BadRequest(ModelState);
-            }
+		if (!string.IsNullOrEmpty(result.RefreshToken))
+			SetRefreshTokenInCookie(result.RefreshToken, result.RefreshTokenExpiration);
 
-            dto.ImageName = imageName;
-            //to do delete old image    Done ☻
-            _imageService.Delete(oldImagePath);
-        }
+		return Ok(result);
+	}
 
-        var result = await _authService.ModfiyUserAsync(dto);
-        if (!result.IsAuthenticated)
-            return BadRequest(result.Message);
+	[HttpGet("get-users-list")]
+	public async Task<IActionResult> GetUsersInfo()
+	{
+		var result = await _authService.GetUsersInfoAsync();
+		if (result == null)
+			return NotFound("We Have Not Users Yet");
 
-        if (!string.IsNullOrEmpty(result.RefreshToken))
-            SetRefreshTokenInCookie(result.RefreshToken, result.RefreshTokenExpiration);
+		return Ok(result);
+	}
 
-        return Ok(result);
-    }
+	[HttpGet("get-user-by-id/{userId}")]
+	public async Task<IActionResult> GetUserByIdAsync(string userId)
+	{
+		if (!ModelState.IsValid)
+			return BadRequest(ModelState);
 
-    [HttpPatch("changePassword")]
-    public async Task<IActionResult> ChangePasswordAsync(ChangePasswordDto dto)
-    {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+		var result = await _authService.GetUserByIdAsync(userId);
+		if (result.Message is not null)
+			return NotFound(new { message = result.Message });
 
-        var result = await _authService.ChangePasswordAsync(dto);
-        if (!result.IsAuthenticated)
-            return BadRequest(result.Message);
+		return Ok(result);
+	}
 
-        if (!string.IsNullOrEmpty(result.RefreshToken))
-            SetRefreshTokenInCookie(result.RefreshToken, result.RefreshTokenExpiration);
+	// To Verify your email address -->
+	// To Reset Password -->
 
-        return Ok(result);
-    }
+	[HttpPost("SendOTPCode/{email}")]
+	public async Task<IActionResult> SendOTPToEmailAsync(string email)
+	{
+		if (!ModelState.IsValid)
+			return BadRequest(ModelState);
 
-    [HttpGet("get-users-list")]
-    public async Task<IActionResult> GetUsersInfo()
-    {
-        var result = await _authService.GetUsersInfoAsync();
-        if (result == null)
-        {
-            return NotFound("We Have Not Users Yet");
-        }
-        return Ok(result);
-    }
+		var result = await _authService.SendOTPCodeAsync(email);
 
-    [HttpGet("get-user-by-id/{userId}")]
-    public async Task<IActionResult> GetUserByIdAsync(string userId)
-    {
-        if (string.IsNullOrEmpty(userId))
-        {
-            return BadRequest(new { message = "UserId Is Required" });
-        }
+		if (!string.IsNullOrEmpty(result))
+			return BadRequest(result);
 
-        var result = await _authService.GetUserByIdAsync(userId);
-        if (result == null)
-        {
-            return NotFound(new { message = "User Not Found" });
-        }
-        return Ok(result);
-    }
+		return Ok(new { message = "Email Send Successfully" });
 
-    [HttpPost("forgetPassword/{email}")]
-    public async Task<IActionResult> SendResetPasswordEmailAsync(string email)
-    {
-        if (string.IsNullOrEmpty(email))
-            return BadRequest("Email Is Required");
-        var result = await _authService.SendResetPasswordEmailAsync(email);
+	}
 
-        if (!string.IsNullOrEmpty(result))
-            return BadRequest(result);
+	[HttpPost("otbVerification")]
+	public async Task<IActionResult> OtbVerification([FromBody] OTPVerificationDto dto)
+	{
+		if (!ModelState.IsValid)
+			return BadRequest(ModelState);
 
-        return Ok(new { message = "Email Send Successfully" });
+		var result = await _authService.OtbVerificationAsync(dto);
+		if (!string.IsNullOrEmpty(result))
+			return BadRequest(result);
 
-    }
+		return Ok(new { message = "Verified successfully" });
+	}
 
-    [HttpPost("resetPassword")]
-    public async Task<IActionResult> ResetPasswordAsync([FromForm]ResetPasswordDto resetPasswordDto)
-    {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+	[HttpPost("resetPassword")]
+	public async Task<IActionResult> ResetPasswordAsync([FromForm] ResetPasswordDto dto)
+	{
+		if (!ModelState.IsValid)
+			return BadRequest(ModelState);
 
-        var result = await _authService.ResetPasswordAsync(resetPasswordDto);
-        if (!string.IsNullOrEmpty(result))
-            return BadRequest(result);
+		var result = await _authService.ResetPasswordAsync(dto);
+		if (!string.IsNullOrEmpty(result))
+			return BadRequest(result);
 
-        return Ok(new { message = "Password Reset Successfully" });
-    }
-    // Route -> Assign User To Role
-    [HttpPost("addRole")]
-    public async Task<IActionResult> AddRoleAsync([FromBody] AddRoleDto dto)
-    {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+		return Ok(new { message = "Password Reset Successfully" });
+	}
+	// Route -> Assign User To Role
+	[HttpPost("addRole")]
+	public async Task<IActionResult> AddRoleAsync([FromBody] AddRoleDto dto)
+	{
+		if (!ModelState.IsValid)
+			return BadRequest(ModelState);
 
-        var result = await _authService.AddRoleAsync(dto);
+		var result = await _authService.AddRoleAsync(dto);
 
-        if (!string.IsNullOrEmpty(result))
-            return BadRequest(result);
+		if (!string.IsNullOrEmpty(result))
+			return BadRequest(result);
 
-        return Ok(dto);
-    }
+		return Ok(dto);
+	}
 
-    [HttpGet("refreshToken")]
-    public async Task<IActionResult> RefreshToken()
-    {
-        var refreshToken = Request.Cookies["refreshToken"];
+	[HttpGet("refreshToken")]
+	public async Task<IActionResult> RefreshToken()
+	{
+		var refreshToken = Request.Cookies["refreshToken"];
 
-        var result = await _authService.RefreshTokenAsync(refreshToken);
+		var result = await _authService.RefreshTokenAsync(refreshToken);
 
-        if (!result.IsAuthenticated)
-            return BadRequest(result);
+		if (!result.IsAuthenticated)
+			return BadRequest(result);
 
-        SetRefreshTokenInCookie(result.RefreshToken, result.RefreshTokenExpiration);
+		SetRefreshTokenInCookie(result.RefreshToken, result.RefreshTokenExpiration);
 
-        return Ok(result);
-    }
+		return Ok(result);
+	}
 
-    [HttpPost("revokeToken")]
-    public async Task<IActionResult> RevokeToken([FromBody] RevokeTokenDto dto)
-    {
-        var token = dto.Token ?? Request.Cookies["refreshToken"];
+	[HttpPost("revokeToken")]
+	public async Task<IActionResult> RevokeToken([FromBody] RevokeTokenDto dto)
+	{
+		var token = dto.Token ?? Request.Cookies["refreshToken"];
 
-        if (string.IsNullOrEmpty(token))
-            return BadRequest("Token is required!");
+		if (string.IsNullOrEmpty(token))
+			return BadRequest("Token is required!");
 
-        var result = await _authService.RevokeTokenAsync(token);
+		var result = await _authService.RevokeTokenAsync(token);
 
-        if (!result)
-            return BadRequest("Token is invalid!");
+		if (!result)
+			return BadRequest("Token is invalid!");
 
-        return Ok();
-    }
+		return Ok();
+	}
 
-    // Append The Refresh Token To Response Cookie
-    private void SetRefreshTokenInCookie(string refreshToken, DateTime expires)
-    {
-        var cookieOptions = new CookieOptions
-        {
-            HttpOnly = true,
-            Expires = expires.ToLocalTime(),
-            Secure = true,
-            IsEssential = true,
-            SameSite = SameSiteMode.None
-        };
+	// Append The Refresh Token To Response Cookie
+	private void SetRefreshTokenInCookie(string refreshToken, DateTime expires)
+	{
+		var cookieOptions = new CookieOptions
+		{
+			HttpOnly = true,
+			Expires = expires.ToLocalTime(),
+			Secure = true,
+			IsEssential = true,
+			SameSite = SameSiteMode.None
+		};
 
-        Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
-    }
+		Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
+	}
 
 }

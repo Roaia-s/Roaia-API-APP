@@ -2,6 +2,6 @@
 
 public interface IUserService
 {
-    Task<IEnumerable<UserDto>> GetAll();
-    Task<ApplicationUser> GetById(string id);
+	Task<IEnumerable<UserDto>> GetAll();
+	Task<ApplicationUser> GetById(string id);
 }

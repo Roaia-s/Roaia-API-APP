@@ -2,9 +2,9 @@
 
 public class TokenRequestDto
 {
-    [MaxLength(128)]
-    public string Email { get; set; } = null!;
+	[MaxLength(128)]
+	public required string Email { get; set; }
 
-    [MaxLength(100)]
-    public string Password { get; set; } = null!;
+	[MaxLength(100)]
+	public required string Password { get; set; }
 }
