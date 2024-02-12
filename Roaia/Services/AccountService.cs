@@ -82,6 +82,25 @@ public class AccountService(UserManager<ApplicationUser> userManager,
 		return dto;
 	}
 
+	public async Task<string> GenerateGlassesIdAsync()
+	{
+		var glassesId = Guid.NewGuid().ToString().Substring(0, 30);
+		var isExist = await _context.Glasses.AnyAsync(g => g.Id == glassesId);
+		if (isExist)
+			return await GenerateGlassesIdAsync();
+
+		Glasses glasses = new() 
+		{
+			Id = glassesId ,
+			ImageUrl = "/images/avatar.png"
+		};
+
+		await _context.Glasses.AddAsync(glasses);
+		await _context.SaveChangesAsync();
+
+		return glassesId;
+	}
+
 	public async Task<ContactDto> ModifyContactInfoAsync(ContactDto dto)
 	{
 		var contact = await _context.Contacts.SingleOrDefaultAsync(c => c.FullName == dto.Name && c.GlassesId == dto.BlindId);

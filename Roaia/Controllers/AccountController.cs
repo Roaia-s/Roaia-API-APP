@@ -29,6 +29,16 @@ public class AccountController(IAccountService accountService) : Controller
 		return Ok(result);
 	}
 
+	[HttpPost("GenerateBlindId")]
+	public async Task<IActionResult> GenerateBlindIdAsync()
+	{
+		var result = await _accountService.GenerateGlassesIdAsync();
+		if (result is null)
+			return NotFound(new { message = "Error in Generating Id" });
+
+		return Ok(result);
+	}
+
 	[HttpPut ("ModifyBlindInfo")]
 	public async Task<IActionResult> BlindInfoAsync([FromForm] BlindInfoDto dto)
 	{
