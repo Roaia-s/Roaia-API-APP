@@ -30,7 +30,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="wwwroot\images\users\" />
+    <Folder Include="wwwroot\images\blind\" />
+    <Folder Include="wwwroot\images\contact\" />
   </ItemGroup>
 
 </Project>
