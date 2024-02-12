@@ -10,6 +10,12 @@ public class ApplicationUser : IdentityUser
 	[MaxLength(100)]
 	public string LastName { get; set; } = null!;
 
+	public string? GlassesId { get; set; }
+
+	public Glasses? Glasses { get; set; }
+
+	public bool IsAgree { get; set; }
+
 	public bool IsDeleted { get; set; }
 
 	public DateTime CreatedOn { get; set; } = DateTime.Now;

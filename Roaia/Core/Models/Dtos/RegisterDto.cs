@@ -8,6 +8,8 @@ public class RegisterDto
 
 	public required string Username { get; set; }
 
+	public required string BlindId { get; set; }
+
 	public required string Email { get; set; }
 
 	public required string Password { get; set; }
@@ -15,6 +17,9 @@ public class RegisterDto
 	public required string PhoneNumber { get; set; }
 
 	public IFormFile? ImageUrl { get; set; }
+
+	[AllowedValues("true","True",ErrorMessage = Errors.RequiredField)]
+	public bool IsAgree { get; set; }
 
 	public string? ImageName { get; set; }
 }

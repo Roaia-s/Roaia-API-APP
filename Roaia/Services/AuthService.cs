@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Options;
+﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Options;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -7,11 +8,12 @@ using System.Text;
 namespace Roaia.Services;
 
 public class AuthService(UserManager<ApplicationUser> userManager,
-	RoleManager<IdentityRole> roleManager,
+	RoleManager<IdentityRole> roleManager, ApplicationDbContext context,
 	IOptions<JWT> jwt, IEmailSender emailSender, IEmailBodyBuilder emailBodyBuilder, IImageService imageService) : IAuthService
 {
 	private readonly UserManager<ApplicationUser> _userManager = userManager;
 	private readonly RoleManager<IdentityRole> _roleManager = roleManager;
+	private readonly ApplicationDbContext _context = context;
 	private readonly JWT _jwt = jwt.Value;
 	private readonly IEmailSender _emailSender = emailSender;
 
@@ -26,7 +28,8 @@ public class AuthService(UserManager<ApplicationUser> userManager,
 		if (await _userManager.FindByNameAsync(dto.Username) is not null)
 			return new AuthDto { Message = "Username is already registered!" };
 
-
+		if (await _context.Glasses.FindAsync(dto.BlindId) is null)
+			return new AuthDto { Message = "This Id Does Not  Exist!" };
 
 		if (dto.ImageUrl is not null)
 		{
@@ -38,8 +41,7 @@ public class AuthService(UserManager<ApplicationUser> userManager,
 			if (!isUploaded)
 				return new AuthDto { Message = errorMessage };
 
-
-			dto.ImageName = $"/images/books/{imageName}";
+			dto.ImageName = $"/images/users/{imageName}";
 		}
 
 		var user = new ApplicationUser
@@ -49,7 +51,9 @@ public class AuthService(UserManager<ApplicationUser> userManager,
 			FirstName = dto.FirstName,
 			LastName = dto.LastName,
 			PhoneNumber = dto.PhoneNumber,
-			ImageUrl = !string.IsNullOrEmpty(dto.ImageName) ? dto.ImageName : null,
+			GlassesId = dto.BlindId,
+			ImageUrl = !string.IsNullOrEmpty(dto.ImageName) ? dto.ImageName : $"/images/avatar.png",
+			IsAgree = true,
 			CreatedOn = DateTime.Now
 		};
 
@@ -383,7 +387,7 @@ public class AuthService(UserManager<ApplicationUser> userManager,
 
 		Random rnd = new();
 		var otpCode = rnd.Next(100000, 999999);
-
+		
 		if (!user.EmailConfirmed)
 		{
 			var body = _emailBodyBuilder.GetEmailBody(
@@ -398,7 +402,7 @@ public class AuthService(UserManager<ApplicationUser> userManager,
 		else
 		{
 			var body = _emailBodyBuilder.GetEmailBody(
-				"https://res.cloudinary.com/shehablotfallah/image/upload/v1706827622/icon-positive-vote-2_jcxdww_lbjawn.png",
+				"https://res.cloudinary.com/shehablotfallah/image/upload/v1707187426/icon-positive-vote-2_jcxdww_lbjawn_l8haqf.png",
 				$"Hey {user.FirstName},",
 				$"<span>Your OTP for resetting your password is </span><br/><br/> <b style=\"color:#181C32; font-size: 20px; font-weight:900\"><mark>{otpCode}</mark></b><br/> <span>Please enter it within <mark> 5 minutes </mark>.</span>"
 			);
@@ -469,21 +473,23 @@ public class AuthService(UserManager<ApplicationUser> userManager,
 	public async Task<List<UserInfoDto>> GetUsersInfoAsync()
 	{
 		var users = new List<UserInfoDto>();
-		var allusers = await _userManager.Users.ToListAsync();
-		foreach (var user in allusers)
+		var allUsers = await _userManager.Users.ToListAsync();
+		foreach (var user in allUsers)
 		{
 			var userRoles = await _userManager.GetRolesAsync(user);
-			var userinfo = new UserInfoDto()
-			{
-				Id = user.Id,
-				FirstName = user.FirstName,
-				LastName = user.LastName,
-				Email = user.Email,
-				UserName = user.UserName,
-				PhoneNumber = user.PhoneNumber,
-				Roles = userRoles.ToList(),
-			};
-			users.Add(userinfo);
+			UserInfoDto userInfo = new();
+
+			userInfo.Id = user.Id;
+			userInfo.FirstName = user.FirstName;
+			userInfo.LastName = user.LastName;
+			userInfo.Email = user.Email;
+			userInfo.UserName = user.UserName;
+			userInfo.PhoneNumber = user.PhoneNumber;
+			userInfo.ImageUrl = user.ImageUrl;
+			userInfo.BlindId = user.GlassesId;
+			userInfo.Roles = userRoles.ToList();
+			
+			users.Add(userInfo);
 		}
 		return users;
 	}
@@ -495,14 +501,17 @@ public class AuthService(UserManager<ApplicationUser> userManager,
 		if (user is null)
 			return new UserInfoDto { Message = "This User Does Not  Exist" };
 
-		UserInfoDto userInfo = new();
 		var userRoles = await _userManager.GetRolesAsync(user!);
+		UserInfoDto userInfo = new();
+
 		userInfo.Id = userId;
 		userInfo.UserName = user.UserName;
 		userInfo.Email = user.Email;
 		userInfo.FirstName = user.FirstName;
 		userInfo.LastName = user.LastName;
 		userInfo.PhoneNumber = user.PhoneNumber;
+		userInfo.ImageUrl = user.ImageUrl;
+		userInfo.BlindId = user.GlassesId;
 		userInfo.Roles = userRoles.ToList();
 
 		return userInfo;

@@ -36,5 +36,6 @@ public class EmailSender : IEmailSender
 
 		await smtpClient.SendMailAsync(message);
 
+		smtpClient.Dispose();
 	}
 }

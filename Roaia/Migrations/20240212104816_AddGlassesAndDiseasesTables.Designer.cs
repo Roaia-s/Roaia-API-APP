@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Roaia.Data;
 
@@ -11,9 +12,11 @@ using Roaia.Data;
 namespace Roaia.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240212104816_AddGlassesAndDiseasesTables")]
+    partial class AddGlassesAndDiseasesTables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -264,40 +267,6 @@ namespace Roaia.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("Roaia.Core.Models.Contact", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int?>("Age")
-                        .HasColumnType("int");
-
-                    b.Property<string>("FullName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("GlassesId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("ImageUrl")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PhoneNumber")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Relation")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("GlassesId");
-
-                    b.ToTable("Contacts");
-                });
-
             modelBuilder.Entity("Roaia.Core.Models.Disease", b =>
                 {
                     b.Property<int>("Id")
@@ -436,15 +405,6 @@ namespace Roaia.Migrations
                     b.Navigation("Glasses");
 
                     b.Navigation("RefreshTokens");
-                });
-
-            modelBuilder.Entity("Roaia.Core.Models.Contact", b =>
-                {
-                    b.HasOne("Roaia.Core.Models.Glasses", "Glasses")
-                        .WithMany()
-                        .HasForeignKey("GlassesId");
-
-                    b.Navigation("Glasses");
                 });
 
             modelBuilder.Entity("Roaia.Core.Models.Disease", b =>

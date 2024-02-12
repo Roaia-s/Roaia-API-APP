@@ -42,6 +42,7 @@ public class AuthController(IAuthService authService, IImageService imageService
 		return Ok(result);
 	}
 
+	// Route -> Modify User
 	[HttpPatch("modifyUser")]
 	public async Task<IActionResult> ModifiyUserAsync([FromForm] ModifyUserDto dto)
 	{
@@ -58,6 +59,7 @@ public class AuthController(IAuthService authService, IImageService imageService
 		return Ok(result);
 	}
 
+	// Route -> changePassword
 	[HttpPut("changePassword")]
 	public async Task<IActionResult> ChangePasswordAsync(ChangePasswordDto dto)
 	{
