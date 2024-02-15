@@ -18,7 +18,6 @@ public class RegisterDto
 
 	public IFormFile? ImageUrl { get; set; }
 
-	[AllowedValues("true","True",ErrorMessage = Errors.RequiredField)]
 	public bool IsAgree { get; set; }
 
 	public string? ImageName { get; set; }
