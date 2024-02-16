@@ -8,9 +8,9 @@ public class DefaultUsers
 		ApplicationUser admin = new()
 		{
 			UserName = "admin",
-			Email = "admin@roaia.com",
+			Email = "roaiaofficial@gmail.com",
 			FirstName = "Roaia",
-			LastName = "Admin",
+			LastName = "Official",
 			EmailConfirmed = true
 		};
 
