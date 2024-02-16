@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
-
-namespace Roaia.Core.Models;
+﻿namespace Roaia.Core.Models;
 
 public class Disease
 {
