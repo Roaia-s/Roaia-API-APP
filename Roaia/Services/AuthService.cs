@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -387,7 +386,7 @@ public class AuthService(UserManager<ApplicationUser> userManager,
 
 		Random rnd = new();
 		var otpCode = rnd.Next(100000, 999999);
-		
+
 		if (!user.EmailConfirmed)
 		{
 			var body = _emailBodyBuilder.GetEmailBody(
@@ -488,7 +487,7 @@ public class AuthService(UserManager<ApplicationUser> userManager,
 			userInfo.ImageUrl = user.ImageUrl;
 			userInfo.BlindId = user.GlassesId;
 			userInfo.Roles = userRoles.ToList();
-			
+
 			users.Add(userInfo);
 		}
 		return users;

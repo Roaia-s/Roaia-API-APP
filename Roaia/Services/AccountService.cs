@@ -33,7 +33,7 @@ public class AccountService(UserManager<ApplicationUser> userManager,
 		if (blind is null)
 			return new BlindInfoDto { Message = "This Id Does Not  Exist" };
 
-		var diseases = await _context.Diseases.Where(d => d.GlassesId == blindId).OrderBy( d => d.Name).ToListAsync();
+		var diseases = await _context.Diseases.Where(d => d.GlassesId == blindId).OrderBy(d => d.Name).ToListAsync();
 
 		BlindInfoDto blindInfo = new();
 		blindInfo.Id = blindId;
@@ -42,7 +42,7 @@ public class AccountService(UserManager<ApplicationUser> userManager,
 		blindInfo.Gender = blind.Gender!;
 		blindInfo.ImageUrl = blind.ImageUrl!;
 		blindInfo.Diseases = diseases.Select(d => d.Name).ToList();
-		 
+
 		return blindInfo;
 	}
 
@@ -89,9 +89,9 @@ public class AccountService(UserManager<ApplicationUser> userManager,
 		if (isExist)
 			return await GenerateGlassesIdAsync();
 
-		Glasses glasses = new() 
+		Glasses glasses = new()
 		{
-			Id = glassesId ,
+			Id = glassesId,
 			ImageUrl = "/images/avatar.png"
 		};
 
@@ -139,13 +139,13 @@ public class AccountService(UserManager<ApplicationUser> userManager,
 		if (blind is null)
 			return new ContactDto { Message = "This Id Does Not  Exist" };
 
-		
+
 
 		if (dto.ImageUpload is not null)
 		{
 			var imageName = $"{Guid.NewGuid()}{Path.GetExtension(dto.ImageUpload.FileName)}";
 			var (isUploaded, errorMessage) = await _imageService.UploadAsync(dto.ImageUpload,
-								imageName,$"/images/contact", hasThumbnail: false);
+								imageName, $"/images/contact", hasThumbnail: false);
 
 			if (!isUploaded)
 				return new ContactDto { Message = errorMessage };
