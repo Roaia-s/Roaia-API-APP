@@ -120,7 +120,7 @@ public class AuthService(UserManager<ApplicationUser> userManager,
 		auth.Token = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
 		auth.Email = user.Email;
 		auth.Username = user.UserName;
-		//auth.ExpiresOn = jwtSecurityToken.ValidTo;
+		auth.ExpiresOn = jwtSecurityToken.ValidTo;
 		auth.Roles = rolesList.ToList();
 
 		if (user.RefreshTokens.Any(t => t.IsActive))
