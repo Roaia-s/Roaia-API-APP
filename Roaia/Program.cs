@@ -1,9 +1,6 @@
 
 using Roaia.Core.Mapping;
-using Serilog;
-using Serilog.Context;
 using System.Reflection;
-using System.Security.Claims;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -75,11 +72,6 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddCors();
 builder.Services.AddSwaggerGen();
 
-//Add Serilog
-Log.Logger = new LoggerConfiguration().ReadFrom.Configuration(builder.Configuration).CreateLogger();
-
-builder.Host.UseSerilog();
-
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -105,17 +97,6 @@ var userManager = scope.ServiceProvider.GetRequiredService<UserManager<Applicati
 
 await DefaultRoles.SeedAsync(roleManager);
 await DefaultUsers.SeedAdminUserAsync(userManager);
-
-app.Use(async (context, next) =>
-{
-	LogContext.PushProperty("UserId", context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-	LogContext.PushProperty("UserName", context.User.FindFirst(ClaimTypes.Name)?.Value);
-
-	await next();
-});
-
-app.UseSerilogRequestLogging();
-
 
 app.MapControllers();
 

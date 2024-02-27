@@ -43,7 +43,7 @@ public class ImageService(IWebHostEnvironment webHostEnvironment) : IImageServic
 	{
 		var oldImagePath = $"{_webHostEnvironment.WebRootPath}{imagePath}";
 
-		if (File.Exists(oldImagePath) && !imagePath.Equals("/images/avatar.png"))
+		if (File.Exists(oldImagePath) && !imagePath.Equals("/images/avatar.png")) 
 			File.Delete(oldImagePath);
 
 		if (!string.IsNullOrEmpty(imageThumbnailPath))

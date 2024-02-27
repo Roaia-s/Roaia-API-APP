@@ -2,7 +2,7 @@
 
 namespace Roaia.Controllers;
 
-[Authorize]
+//[Authorize]
 [Route("api/[controller]")]
 [ApiController]
 public class AccountController(IAccountService accountService) : Controller
@@ -18,7 +18,7 @@ public class AccountController(IAccountService accountService) : Controller
 
 		return Ok(result);
 	}
-
+	
 	[HttpGet("blindInfo/{blindId}")]
 	public async Task<IActionResult> GetBlindInfoAsync(string blindId)
 	{
@@ -39,7 +39,7 @@ public class AccountController(IAccountService accountService) : Controller
 		return Ok(result);
 	}
 
-	[HttpPut("ModifyBlindInfo")]
+	[HttpPut ("ModifyBlindInfo")]
 	public async Task<IActionResult> BlindInfoAsync([FromForm] BlindInfoDto dto)
 	{
 		if (!ModelState.IsValid)
@@ -81,7 +81,7 @@ public class AccountController(IAccountService accountService) : Controller
 		return Ok(result);
 	}
 
-	[HttpGet("getAllContacts/{blindId}")]
+	[HttpGet("contacts/{blindId}")]
 	public async Task<IActionResult> GetAllContactsByIdAsync(string blindId)
 	{
 		var result = await _accountService.GetAllContactsByIdAsync(blindId);
