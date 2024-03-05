@@ -14,7 +14,7 @@ public class RegisterDto
 
 	public required string Password { get; set; }
 
-	public required string PhoneNumber { get; set; }
+	public string? PhoneNumber { get; set; }
 
 	public IFormFile? ImageUrl { get; set; }
 

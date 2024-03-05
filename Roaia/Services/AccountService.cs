@@ -2,10 +2,12 @@
 
 public class AccountService(UserManager<ApplicationUser> userManager,
 	ApplicationDbContext context,
-	IImageService imageService) : IAccountService
+	IWebHostEnvironment webHostEnvironment, IImageService imageService) : IAccountService
 {
 	private readonly UserManager<ApplicationUser> _userManager = userManager;
 	private readonly ApplicationDbContext _context = context;
+
+	private readonly IWebHostEnvironment _webHostEnvironment = webHostEnvironment;
 	private readonly IImageService _imageService = imageService;
 
 	public async Task<UserInfoDto> GetUserInformationAsync(string userId)
@@ -21,7 +23,7 @@ public class AccountService(UserManager<ApplicationUser> userManager,
 		userInfo.PhoneNumber = user.PhoneNumber;
 		userInfo.FirstName = user.FirstName;
 		userInfo.LastName = user.LastName;
-		userInfo.ImageUrl = user.ImageUrl;
+		userInfo.ImageUrl = $"{_webHostEnvironment.WebRootPath}{user.ImageUrl}";
 		userInfo.BlindId = user.GlassesId;
 
 		return userInfo;
@@ -40,7 +42,7 @@ public class AccountService(UserManager<ApplicationUser> userManager,
 		blindInfo.FullName = blind.FullName!;
 		blindInfo.Age = blind.Age;
 		blindInfo.Gender = blind.Gender!;
-		blindInfo.ImageUrl = blind.ImageUrl!;
+		blindInfo.ImageUrl = $"{_webHostEnvironment.WebRootPath}{blind.ImageUrl}";
 		blindInfo.Diseases = diseases.Select(d => d.Name).ToList();
 
 		return blindInfo;
@@ -79,7 +81,17 @@ public class AccountService(UserManager<ApplicationUser> userManager,
 
 		await _context.SaveChangesAsync();
 
-		return dto;
+		var diseases = await _context.Diseases.Where(d => d.GlassesId == dto.Id).OrderBy(d => d.Name).ToListAsync();
+
+		BlindInfoDto blindInfo = new();
+		blindInfo.Id = blind.Id;
+		blindInfo.FullName = blind.FullName!;
+		blindInfo.Age = blind.Age;
+		blindInfo.Gender = blind.Gender!;
+		blindInfo.ImageUrl = $"{_webHostEnvironment.WebRootPath}{blind.ImageUrl}";
+		blindInfo.Diseases = diseases.Select(d => d.Name).ToList();
+
+		return blindInfo;
 	}
 
 	public async Task<string> GenerateGlassesIdAsync()
@@ -129,7 +141,13 @@ public class AccountService(UserManager<ApplicationUser> userManager,
 
 		await _context.SaveChangesAsync();
 
-		return dto;
+		ContactDto contactDto = new();
+		contactDto.Name = contact.FullName!;
+		contactDto.Age = contact.Age;
+		contactDto.Relation = contact.Relation!;
+		contactDto.ImageUrl = $"{_webHostEnvironment.WebRootPath}{contact.ImageUrl}";
+
+		return contactDto;
 	}
 
 	public async Task<ContactDto> AddContactAsync(ContactDto dto)
@@ -165,7 +183,13 @@ public class AccountService(UserManager<ApplicationUser> userManager,
 		await _context.Contacts.AddAsync(contact);
 		await _context.SaveChangesAsync();
 
-		return dto;
+		ContactDto contactDto = new();
+		contactDto.Name = contact.FullName!;
+		contactDto.Age = contact.Age;
+		contactDto.Relation = contact.Relation!;
+		contactDto.ImageUrl = $"{_webHostEnvironment.WebRootPath}{contact.ImageUrl}";
+
+		return contactDto;
 	}
 
 	public async Task<List<Contact>> GetAllContactsByIdAsync(string blindId)

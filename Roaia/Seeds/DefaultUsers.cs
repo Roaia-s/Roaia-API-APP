@@ -11,6 +11,7 @@ public class DefaultUsers
 			Email = "roaiaofficial@gmail.com",
 			FirstName = "Roaia",
 			LastName = "Official",
+			ImageUrl = "/images/avatar.png",
 			EmailConfirmed = true
 		};
 
