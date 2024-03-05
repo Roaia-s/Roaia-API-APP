@@ -2,11 +2,12 @@
 
 public class ContactDto
 {
-	public string Name { get; set; } = string.Empty;
+	public string Name { get; set; }
 	public int? Age { get; set; }
-	public string? Relation { get; set; } = string.Empty;
+	public string? Relation { get; set; }
 	public IFormFile? ImageUpload { get; set; }
-	public string? ImageUrl { get; set; } = string.Empty;
-	public string? BlindId { get; set; } = string.Empty;
-	public string? Message { get; set; } = string.Empty;
+	public string? PhoneNumber { get; set; }
+	public string? ImageUrl { get; set; }
+	public string? BlindId { get; set; }
+	public string? Message { get; set; }
 }

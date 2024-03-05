@@ -2,12 +2,12 @@
 
 public class AccountService(UserManager<ApplicationUser> userManager,
 	ApplicationDbContext context,
-	IWebHostEnvironment webHostEnvironment, IImageService imageService) : IAccountService
+	IConfiguration configuration, IImageService imageService) : IAccountService
 {
 	private readonly UserManager<ApplicationUser> _userManager = userManager;
 	private readonly ApplicationDbContext _context = context;
 
-	private readonly IWebHostEnvironment _webHostEnvironment = webHostEnvironment;
+	private readonly IConfiguration _configuration = configuration;
 	private readonly IImageService _imageService = imageService;
 
 	public async Task<UserInfoDto> GetUserInformationAsync(string userId)
@@ -18,12 +18,13 @@ public class AccountService(UserManager<ApplicationUser> userManager,
 
 		UserInfoDto userInfo = new();
 
+		userInfo.Id = user.Id;
 		userInfo.UserName = user.UserName;
 		userInfo.Email = user.Email;
 		userInfo.PhoneNumber = user.PhoneNumber;
 		userInfo.FirstName = user.FirstName;
 		userInfo.LastName = user.LastName;
-		userInfo.ImageUrl = $"{_webHostEnvironment.WebRootPath}{user.ImageUrl}";
+		userInfo.ImageUrl = $"{_configuration.GetSection("Application:AppDomain").Value}{user.ImageUrl}";
 		userInfo.BlindId = user.GlassesId;
 
 		return userInfo;
@@ -42,7 +43,7 @@ public class AccountService(UserManager<ApplicationUser> userManager,
 		blindInfo.FullName = blind.FullName!;
 		blindInfo.Age = blind.Age;
 		blindInfo.Gender = blind.Gender!;
-		blindInfo.ImageUrl = $"{_webHostEnvironment.WebRootPath}{blind.ImageUrl}";
+		blindInfo.ImageUrl = $"{_configuration.GetSection("Application:AppDomain").Value}{blind.ImageUrl}";
 		blindInfo.Diseases = diseases.Select(d => d.Name).ToList();
 
 		return blindInfo;
@@ -88,7 +89,7 @@ public class AccountService(UserManager<ApplicationUser> userManager,
 		blindInfo.FullName = blind.FullName!;
 		blindInfo.Age = blind.Age;
 		blindInfo.Gender = blind.Gender!;
-		blindInfo.ImageUrl = $"{_webHostEnvironment.WebRootPath}{blind.ImageUrl}";
+		blindInfo.ImageUrl = $"{_configuration.GetSection("Application:AppDomain").Value}{blind.ImageUrl}";
 		blindInfo.Diseases = diseases.Select(d => d.Name).ToList();
 
 		return blindInfo;
@@ -145,7 +146,7 @@ public class AccountService(UserManager<ApplicationUser> userManager,
 		contactDto.Name = contact.FullName!;
 		contactDto.Age = contact.Age;
 		contactDto.Relation = contact.Relation!;
-		contactDto.ImageUrl = $"{_webHostEnvironment.WebRootPath}{contact.ImageUrl}";
+		contactDto.ImageUrl = $"{_configuration.GetSection("Application:AppDomain").Value}{contact.ImageUrl}";
 
 		return contactDto;
 	}
@@ -187,7 +188,8 @@ public class AccountService(UserManager<ApplicationUser> userManager,
 		contactDto.Name = contact.FullName!;
 		contactDto.Age = contact.Age;
 		contactDto.Relation = contact.Relation!;
-		contactDto.ImageUrl = $"{_webHostEnvironment.WebRootPath}{contact.ImageUrl}";
+		contactDto.PhoneNumber = contact.PhoneNumber!;
+		contactDto.ImageUrl = $"{_configuration.GetSection("Application:AppDomain").Value}{contact.ImageUrl}";
 
 		return contactDto;
 	}
@@ -195,6 +197,10 @@ public class AccountService(UserManager<ApplicationUser> userManager,
 	public async Task<List<Contact>> GetAllContactsByIdAsync(string blindId)
 	{
 		var contacts = await _context.Contacts.Where(c => c.GlassesId == blindId).ToListAsync();
+		
+		// add domain to image for contacts
+		contacts.ForEach(c => c.ImageUrl = $"{_configuration.GetSection("Application:AppDomain").Value}{c.ImageUrl}");
+
 		return contacts;
 	}
 }

@@ -8,7 +8,7 @@ namespace Roaia.Services;
 
 public class AuthService(UserManager<ApplicationUser> userManager,
 	RoleManager<IdentityRole> roleManager, ApplicationDbContext context,
-	IOptions<JWT> jwt, IWebHostEnvironment webHostEnvironment,
+	IOptions<JWT> jwt, IConfiguration configuration,
 	IEmailSender emailSender, IEmailBodyBuilder emailBodyBuilder,
 	IImageService imageService) : IAuthService
 {
@@ -17,7 +17,7 @@ public class AuthService(UserManager<ApplicationUser> userManager,
 	private readonly ApplicationDbContext _context = context;
 	private readonly JWT _jwt = jwt.Value;
 
-	private readonly IWebHostEnvironment _webHostEnvironment = webHostEnvironment;
+	private readonly IConfiguration _configuration = configuration;
 	private readonly IEmailSender _emailSender = emailSender;
 	private readonly IEmailBodyBuilder _emailBodyBuilder = emailBodyBuilder;
 	private readonly IImageService _imageService = imageService;
@@ -486,7 +486,7 @@ public class AuthService(UserManager<ApplicationUser> userManager,
 			userInfo.Email = user.Email;
 			userInfo.UserName = user.UserName;
 			userInfo.PhoneNumber = user.PhoneNumber;
-			userInfo.ImageUrl = $"{_webHostEnvironment.WebRootPath}{user.ImageUrl}";
+			userInfo.ImageUrl = $"{_configuration.GetSection("Application:AppDomain").Value}{user.ImageUrl}";
 			userInfo.BlindId = user.GlassesId;
 			userInfo.Roles = userRoles.ToList();
 
@@ -511,7 +511,7 @@ public class AuthService(UserManager<ApplicationUser> userManager,
 		userInfo.FirstName = user.FirstName;
 		userInfo.LastName = user.LastName;
 		userInfo.PhoneNumber = user.PhoneNumber;
-		userInfo.ImageUrl = $"{_webHostEnvironment.WebRootPath}{user.ImageUrl}";
+		userInfo.ImageUrl = $"{_configuration.GetSection("Application:AppDomain").Value}{user.ImageUrl}";
 		userInfo.BlindId = user.GlassesId;
 		userInfo.Roles = userRoles.ToList();
 

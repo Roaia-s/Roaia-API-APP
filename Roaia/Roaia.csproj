@@ -32,6 +32,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="logs\" />
     <Folder Include="wwwroot\images\blind\" />
     <Folder Include="wwwroot\images\contact\" />
     <Folder Include="wwwroot\images\users\" />
