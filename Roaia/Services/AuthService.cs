@@ -8,14 +8,17 @@ namespace Roaia.Services;
 
 public class AuthService(UserManager<ApplicationUser> userManager,
 	RoleManager<IdentityRole> roleManager, ApplicationDbContext context,
-	IOptions<JWT> jwt, IEmailSender emailSender, IEmailBodyBuilder emailBodyBuilder, IImageService imageService) : IAuthService
+	IOptions<JWT> jwt, IWebHostEnvironment webHostEnvironment,
+	IEmailSender emailSender, IEmailBodyBuilder emailBodyBuilder,
+	IImageService imageService) : IAuthService
 {
 	private readonly UserManager<ApplicationUser> _userManager = userManager;
 	private readonly RoleManager<IdentityRole> _roleManager = roleManager;
 	private readonly ApplicationDbContext _context = context;
 	private readonly JWT _jwt = jwt.Value;
-	private readonly IEmailSender _emailSender = emailSender;
 
+	private readonly IWebHostEnvironment _webHostEnvironment = webHostEnvironment;
+	private readonly IEmailSender _emailSender = emailSender;
 	private readonly IEmailBodyBuilder _emailBodyBuilder = emailBodyBuilder;
 	private readonly IImageService _imageService = imageService;
 
@@ -49,7 +52,6 @@ public class AuthService(UserManager<ApplicationUser> userManager,
 			Email = dto.Email,
 			FirstName = dto.FirstName,
 			LastName = dto.LastName,
-			PhoneNumber = dto.PhoneNumber,
 			GlassesId = dto.BlindId,
 			ImageUrl = !string.IsNullOrEmpty(dto.ImageName) ? dto.ImageName : $"/images/avatar.png",
 			IsAgree = true,
@@ -83,7 +85,7 @@ public class AuthService(UserManager<ApplicationUser> userManager,
 		return new AuthDto
 		{
 			Email = user.Email,
-			//ExpiresOn = jwtSecurityToken.ValidTo,
+			ExpiresOn = jwtSecurityToken.ValidTo,
 			IsAuthenticated = true,
 			Roles = new List<string> { "User" },
 			Token = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken),
@@ -120,7 +122,7 @@ public class AuthService(UserManager<ApplicationUser> userManager,
 		auth.Token = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
 		auth.Email = user.Email;
 		auth.Username = user.UserName;
-		//auth.ExpiresOn = jwtSecurityToken.ValidTo;
+		auth.ExpiresOn = jwtSecurityToken.ValidTo;
 		auth.Roles = rolesList.ToList();
 
 		if (user.RefreshTokens.Any(t => t.IsActive))
@@ -484,7 +486,7 @@ public class AuthService(UserManager<ApplicationUser> userManager,
 			userInfo.Email = user.Email;
 			userInfo.UserName = user.UserName;
 			userInfo.PhoneNumber = user.PhoneNumber;
-			userInfo.ImageUrl = user.ImageUrl;
+			userInfo.ImageUrl = $"{_webHostEnvironment.WebRootPath}{user.ImageUrl}";
 			userInfo.BlindId = user.GlassesId;
 			userInfo.Roles = userRoles.ToList();
 
@@ -509,7 +511,7 @@ public class AuthService(UserManager<ApplicationUser> userManager,
 		userInfo.FirstName = user.FirstName;
 		userInfo.LastName = user.LastName;
 		userInfo.PhoneNumber = user.PhoneNumber;
-		userInfo.ImageUrl = user.ImageUrl;
+		userInfo.ImageUrl = $"{_webHostEnvironment.WebRootPath}{user.ImageUrl}";
 		userInfo.BlindId = user.GlassesId;
 		userInfo.Roles = userRoles.ToList();
 

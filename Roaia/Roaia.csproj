@@ -29,12 +29,12 @@
     <PackageReference Include="SixLabors.ImageSharp.Web" Version="3.0.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.0.3" />
-    <PackageReference Include="UoN.ExpressiveAnnotations.NetCore" Version="1.0.0" />
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="wwwroot\images\blind\" />
     <Folder Include="wwwroot\images\contact\" />
+    <Folder Include="wwwroot\images\users\" />
   </ItemGroup>
 
 </Project>

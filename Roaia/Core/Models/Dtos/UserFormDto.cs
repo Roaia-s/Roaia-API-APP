@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc.Rendering;
-using UoN.ExpressiveAnnotations.NetCore.Attributes;
 
 namespace Roaia.Core.Models.Dtos;
 
@@ -29,13 +28,11 @@ public class UserFormDto
 	[StringLength(100, ErrorMessage = Errors.MaxMinLength, MinimumLength = 8),
 		RegularExpression(RegexPatterns.Password, ErrorMessage = Errors.WeakPassword),
 		DataType(DataType.Password)]
-	[RequiredIf("Id == null", ErrorMessage = Errors.RequiredField)]
 	public string? Password { get; set; } = null!;
 
 	[DataType(DataType.Password),
 		Compare("Password", ErrorMessage = Errors.ConfirmPasswordNotMatch),
 		Display(Name = "Confirm password")]
-	[RequiredIf("Id == null", ErrorMessage = Errors.RequiredField)]
 	public string? ConfirmPassword { get; set; } = null!;
 
 	[Display(Name = "Roles")]
