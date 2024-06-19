@@ -1,0 +1,6 @@
+@Roaia_HostAddress = http://localhost:5017
+
+GET {{Roaia_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
