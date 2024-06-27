@@ -10,7 +10,7 @@ public class AuthDto
     public string? Token { get; set; }
     public DateTime? ExpiresOn { get; set; }
 
-    [JsonIgnore]
+    //[JsonIgnore]
     public string? RefreshToken { get; set; }
     public DateTime RefreshTokenExpiration { get; set; }
 }

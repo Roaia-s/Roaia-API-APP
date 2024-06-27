@@ -18,7 +18,7 @@ public static class Errors
     public const string DenySpecialCharacters = "Special characters are not allowed!";
     public const string InvalidMobileNumber = "Invalid mobile number 01X XXXX XXXX!";
     public const string InvalidNationalId = "Invalid national ID!";
-    public const string InvalidGUID = "Invalid Glasses ID XXXXXXXX-XXXX-XXXX-XXXX-XXXXXX!";
+    public const string InvalidGUID = "Invalid Glasses ID XXXXXXXX-XXXX-XXXX-XXXX-XXXXXX! and GUID";
     public const string InvalidIdentifier = "Invalid identifier, must be a valid email, phone number, or username!";
     public const string AllowedGenders = "Only 'Male' and 'Female' are allowed!";
     public const string InvalidImageUrl = "Invalid image URL. Only (*.jpg *.jpeg *.png) files are allowed!";

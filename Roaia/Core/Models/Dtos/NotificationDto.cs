@@ -1,6 +1,6 @@
 ﻿namespace Roaia.Core.Models.Dtos;
 
-public class MessageDto
+public class NotificationDto
 {
     [MaxLength(100, ErrorMessage = Errors.MaxLength)]
     public string Title { get; set; }

@@ -45,8 +45,18 @@ public class GlassesController(IAccountService accountService, INotificationServ
         return Ok(result);
     }
 
+    [HttpGet("getAllContacts/{blindId}")]
+    public async Task<IActionResult> GetAllContactsByIdAsync(string blindId)
+    {
+        var result = await _accountService.GetAllContactsByIdAsync(blindId);
+        if (result is null)
+            return NotFound(new { message = "No Contacts Found or error in blind id" });
+
+        return Ok(result);
+    }
+
     [HttpPost("SendNotification")]
-    public async Task<IActionResult> SendMessageAsync([FromBody] MessageDto request)
+    public async Task<IActionResult> SendMessageAsync([FromBody] NotificationDto request)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);

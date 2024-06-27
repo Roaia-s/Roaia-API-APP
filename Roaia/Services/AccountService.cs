@@ -10,16 +10,20 @@ public class AccountService(UserManager<ApplicationUser> userManager,
     private readonly IConfiguration _configuration = configuration;
     private readonly IImageService _imageService = imageService;
 
-    public async Task<UserInfoDto> GetUserInformationAsync(string userId)
+    public async Task<UserInfoDto> GetUserInformationAsync(string email)
     {
-        var user = await _userManager.FindByIdAsync(userId);
-        if (user is null || user.IsDeleted)
+        var userName = email.ToUpper();
+
+        var user = await _userManager.Users
+            .SingleOrDefaultAsync(u => (u.NormalizedUserName == userName || u.NormalizedEmail == userName || u.PhoneNumber == userName) && !u.IsDeleted);
+
+        if (user is null)
             return new UserInfoDto { Message = "This User Does Not  Exist" };
 
         UserInfoDto userInfo = new()
         {
             Id = user.Id,
-            UserName = user!.UserName,
+            UserName = user.UserName,
             Email = user.Email,
             PhoneNumber = user.PhoneNumber,
             FirstName = user.FirstName,
@@ -167,14 +171,16 @@ public class AccountService(UserManager<ApplicationUser> userManager,
             contact.ImageUrl = $"{FileSettings.contactImagesPath}/{imageName}";
         }
 
-        contact.FullName = dto.Name;
-        contact.Age = dto.Age;
-        contact.Relation = dto.Relation;
+        contact.FullName = dto.Name ?? contact.FullName;
+        contact.Age = dto.Age ?? contact.Age;
+        contact.Relation = dto.Relation ?? contact.Relation;
+        contact.PhoneNumber = dto.PhoneNumber ?? contact.PhoneNumber;
 
         await _context.SaveChangesAsync();
 
         ContactDto contactDto = new()
         {
+            Id = contact.Id,
             Name = contact.FullName!,
             Age = contact.Age,
             Relation = contact.Relation!,
@@ -192,6 +198,11 @@ public class AccountService(UserManager<ApplicationUser> userManager,
 
         if (blind is null)
             return new ContactDto { Message = "This Id Does Not  Exist" };
+
+        //var contactsCount = await _context.Contacts.CountAsync(c => c.GlassesId == dto.BlindId);
+
+        //if (contactsCount >= 7)
+        //    return new ContactDto { Message = "The number of contacts exceeds the limit of the free plan!" };
 
 
         if (dto.ImageUpload is not null)

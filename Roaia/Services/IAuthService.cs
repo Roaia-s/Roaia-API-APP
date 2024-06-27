@@ -17,14 +17,6 @@ public interface IAuthService
     Task<string> OtbVerificationAsync(OTPVerificationDto dto);
     Task<List<UserInfoDto>?> GetUsersInfoAsync();
     Task<UserInfoDto> GetUserByIdAsync(string userId);
-    //// login with google
-    //Task<AuthDto> GoogleLoginAsync(string idToken);
-    //// login with facebook
-    //Task<AuthDto> FacebookLoginAsync(string accessToken);
-    //// login with twitter
-    //Task<AuthDto> TwitterLoginAsync(string accessToken, string accessTokenSecret);
-
     // unsubscribe from mail news
     Task<string> UnsubscribeMailNewsAsync(string email);
-
 }

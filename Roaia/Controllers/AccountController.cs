@@ -3,14 +3,16 @@
 [Authorize]
 [Route("api/[controller]")]
 [ApiController]
-public class AccountController(IAccountService accountService) : Controller
+public class AccountController(IAccountService accountService, INotificationService notificationService) : Controller
 {
     private readonly IAccountService _accountService = accountService;
+    private readonly INotificationService _notificationService = notificationService;
 
-    [HttpGet("userinfo/{userId}")]
-    public async Task<IActionResult> GetUserInfoAsync(string userId)
+
+    [HttpGet("userinfo/{email}")]
+    public async Task<IActionResult> GetUserInfoAsync(string email)
     {
-        var result = await _accountService.GetUserInformationAsync(userId);
+        var result = await _accountService.GetUserInformationAsync(email);
         if (result.Message is not null)
             return NotFound(new { message = result.Message });
 
@@ -97,5 +99,26 @@ public class AccountController(IAccountService accountService) : Controller
             return NotFound(new { message = $"Error in Deleting Account: {result}" });
 
         return Ok(new { message = "Account Deleted Successfully" });
+    }
+
+    [HttpGet("GetNotificationsByGlassesId/{glassesId}")]
+    public async Task<IActionResult> GetNotificationsByGlassesIdAsync(string glassesId)
+    {
+        var result = await _notificationService.GetNotificationsByGlassesIdAsync(glassesId);
+        if (result.IsNullOrEmpty())
+            return NotFound(new { message = "glassesId is not found, or no notifications found" });
+
+        return Ok(result);
+    }
+
+    //delete all notifications for a specific glasses
+    [HttpPost("DeleteNotifications/{glassesId}")]
+    public async Task<IActionResult> DeleteNotificationsAsync(string glassesId)
+    {
+        var result = await _notificationService.DeleteNotificationsAsync(glassesId);
+        if (result.Message is not null)
+            return NotFound(new { message = result.Message });
+
+        return Ok(new { message = "Notifications Deleted Successfully" });
     }
 }

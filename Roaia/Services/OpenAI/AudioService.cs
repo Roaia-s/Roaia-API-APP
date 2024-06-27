@@ -10,7 +10,6 @@ public class AudioService(IOptions<SpeechSettings> options) : IAudioService
     public async Task<string> TranscribeAudioAsync(byte[] audioData)
     {
         var speechConfig = SpeechConfig.FromSubscription(_options.SubscriptionKey, _options.Region);
-        speechConfig.OutputFormat = OutputFormat.Simple;
         var audioInputStream = AudioInputStream.CreatePushStream();
 
         audioInputStream.Write(audioData);

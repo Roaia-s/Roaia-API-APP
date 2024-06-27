@@ -191,10 +191,13 @@ public class AuthController(IAuthService authService, IConfiguration configurati
     }
 
     // Route -> Refresh Token
-    [HttpGet("refreshToken")]
-    public async Task<IActionResult> RefreshToken()
+    [HttpPost("refreshToken")]
+    public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenDto dto)
     {
-        var refreshToken = Request.Cookies["refreshToken"];
+        var refreshToken = dto.RefreshToken ?? Request.Cookies["refreshToken"];
+
+        if (string.IsNullOrEmpty(refreshToken))
+            return BadRequest("Token is required!");
 
         var result = await _authService.RefreshTokenAsync(refreshToken);
 
