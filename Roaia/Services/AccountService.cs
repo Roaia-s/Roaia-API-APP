@@ -1,25 +1,36 @@
-﻿namespace Roaia.Services;
+﻿using Azure.Core;
+
+namespace Roaia.Services;
 
 public class AccountService(UserManager<ApplicationUser> userManager,
     ApplicationDbContext context,
-    IConfiguration configuration, IImageService imageService) : IAccountService
+    IConfiguration configuration,
+    IImageService imageService,
+    INotificationService notificationService,
+    IOptions<NotificationSettings> notificationSettings) : IAccountService
 {
     private readonly UserManager<ApplicationUser> _userManager = userManager;
     private readonly ApplicationDbContext _context = context;
 
     private readonly IConfiguration _configuration = configuration;
     private readonly IImageService _imageService = imageService;
+    private readonly INotificationService _notificationService = notificationService;
+    private readonly NotificationSettings _notificationSettings = notificationSettings.Value;
 
-    public async Task<UserInfoDto> GetUserInformationAsync(string userId)
+    public async Task<UserInfoDto> GetUserInformationAsync(string email)
     {
-        var user = await _userManager.FindByIdAsync(userId);
-        if (user is null || user.IsDeleted)
+        var userName = email.ToUpper();
+
+        var user = await _userManager.Users
+            .SingleOrDefaultAsync(u => (u.NormalizedUserName == userName || u.NormalizedEmail == userName || u.PhoneNumber == userName) && !u.IsDeleted);
+
+        if (user is null)
             return new UserInfoDto { Message = "This User Does Not  Exist" };
 
         UserInfoDto userInfo = new()
         {
             Id = user.Id,
-            UserName = user!.UserName,
+            UserName = user.UserName,
             Email = user.Email,
             PhoneNumber = user.PhoneNumber,
             FirstName = user.FirstName,
@@ -167,14 +178,16 @@ public class AccountService(UserManager<ApplicationUser> userManager,
             contact.ImageUrl = $"{FileSettings.contactImagesPath}/{imageName}";
         }
 
-        contact.FullName = dto.Name;
-        contact.Age = dto.Age;
-        contact.Relation = dto.Relation;
+        contact.FullName = dto.Name ?? contact.FullName;
+        contact.Age = dto.Age ?? contact.Age;
+        contact.Relation = dto.Relation ?? contact.Relation;
+        contact.PhoneNumber = dto.PhoneNumber ?? contact.PhoneNumber;
 
         await _context.SaveChangesAsync();
 
         ContactDto contactDto = new()
         {
+            Id = contact.Id,
             Name = contact.FullName!,
             Age = contact.Age,
             Relation = contact.Relation!,
@@ -192,6 +205,11 @@ public class AccountService(UserManager<ApplicationUser> userManager,
 
         if (blind is null)
             return new ContactDto { Message = "This Id Does Not  Exist" };
+
+        //var contactsCount = await _context.Contacts.CountAsync(c => c.GlassesId == dto.BlindId);
+
+        //if (contactsCount >= 7)
+        //    return new ContactDto { Message = "The number of contacts exceeds the limit of the free plan!" };
 
 
         if (dto.ImageUpload is not null)
@@ -218,6 +236,18 @@ public class AccountService(UserManager<ApplicationUser> userManager,
 
         await _context.Contacts.AddAsync(contact);
         await _context.SaveChangesAsync();
+
+        // send notification to the blind
+        await _notificationService.SendNotificationAsync(new NotificationDto
+        {
+            Title = _notificationSettings.Title,
+            Body = $"{_notificationSettings.Body} {contact.FullName}. Make a positive impact on their journey!",
+            ImageUrl = _notificationSettings.ImageUrl,
+            AudioUrl = _notificationSettings.AudioUrl,
+            GlassesId = contact.GlassesId,
+            Type = _notificationSettings.Type
+        });
+
 
         ContactDto contactDto = new()
         {
@@ -275,6 +305,45 @@ public class AccountService(UserManager<ApplicationUser> userManager,
         var tokens = await _context.DeviceTokens.Where(t => t.UserId == userId).ToListAsync();
 
         _context.DeviceTokens.RemoveRange(tokens);
+        await _context.SaveChangesAsync();
+
+        return message;
+    }
+
+    public async Task<NotificationDto> ManualNotificationAsync(NotificationDto request)
+    {
+        if(await _context.Glasses.SingleOrDefaultAsync(g => g.Id == request.GlassesId) is null)
+            return new NotificationDto { Message = "This Id Does Not  Exist" };
+
+        var notification = new AppNotification
+        {
+            Title = request.Title,
+            Body = request.Body,
+            ImageUrl = request.ImageUrl,
+            AudioUrl = request.AudioUrl,
+            GlassesId = request.GlassesId,
+            Type = request.Type,
+            IsRead = false
+        };
+
+        await _context.Notifications.AddAsync(notification);
+        await _context.SaveChangesAsync();
+
+        return request;
+    }
+
+    public async Task<string> DeleteContactAsync(int contactId)
+    {
+        var message = string.Empty;
+        var contact = await _context.Contacts.FindAsync(contactId);
+        if (contact is null)
+            return message = "This Contact Does Not  Exist";
+
+        //delete Contact image from server
+        if (!string.IsNullOrEmpty(contact.ImageUrl))
+            _imageService.Delete(contact.ImageUrl);
+
+        _context.Contacts.Remove(contact);
         await _context.SaveChangesAsync();
 
         return message;

@@ -121,17 +121,17 @@ public class AuthService(UserManager<ApplicationUser> userManager,
             auth.Message = "Please verify your email address!";
             return auth;
         }
-        if (dto.DeviceToken is not null)
+
+        if (!dto.DeviceToken.IsNullOrEmpty())
         {
             //check if the device token is already exist
-            var deviceToken = await _context.DeviceTokens.SingleOrDefaultAsync(t => t.Token == dto.DeviceToken && t.UserId == user.Id);
+            var deviceToken = await _context.DeviceTokens.SingleOrDefaultAsync(t => t.Token == dto.DeviceToken);
 
             if (deviceToken is null)
             {
                 deviceToken = new DeviceToken
                 {
                     Token = dto.DeviceToken,
-                    CreatedOn = DateTime.Now,
                     LastUpdatedOn = DateTime.Now,
                     GlassesId = user.GlassesId,
                     UserId = user.Id

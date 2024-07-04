@@ -14,6 +14,7 @@ builder.Services.Configure<JWT>(builder.Configuration.GetSection(nameof(JWT)));
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
+builder.Services.AddHttpClient();
 //
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
@@ -70,6 +71,8 @@ builder.Services.AddAutoMapper(Assembly.GetAssembly(typeof(MappingProfile)));
 
 builder.Services.Configure<MailSettings>(builder.Configuration.GetSection(nameof(MailSettings)));
 builder.Services.Configure<SpeechSettings>(builder.Configuration.GetSection(nameof(SpeechSettings)));
+builder.Services.Configure<OpenAISettings>(builder.Configuration.GetSection(nameof(OpenAISettings)));
+builder.Services.Configure<NotificationSettings>(builder.Configuration.GetSection(nameof(NotificationSettings)));
 //
 FirebaseApp.Create(new AppOptions()
 {

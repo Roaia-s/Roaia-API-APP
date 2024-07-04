@@ -3,14 +3,16 @@
 [Authorize]
 [Route("api/[controller]")]
 [ApiController]
-public class AccountController(IAccountService accountService) : Controller
+public class AccountController(IAccountService accountService, INotificationService notificationService) : Controller
 {
     private readonly IAccountService _accountService = accountService;
+    private readonly INotificationService _notificationService = notificationService;
 
-    [HttpGet("userinfo/{userId}")]
-    public async Task<IActionResult> GetUserInfoAsync(string userId)
+
+    [HttpGet("userinfo/{email}")]
+    public async Task<IActionResult> GetUserInfoAsync(string email)
     {
-        var result = await _accountService.GetUserInformationAsync(userId);
+        var result = await _accountService.GetUserInformationAsync(email);
         if (result.Message is not null)
             return NotFound(new { message = result.Message });
 
@@ -79,6 +81,17 @@ public class AccountController(IAccountService accountService) : Controller
         return Ok(result);
     }
 
+    //Delete contact by id
+    [HttpPost("DeleteContact/{contactId}")]
+    public async Task<IActionResult> DeleteContactAsync(int contactId)
+    {
+        var result = await _accountService.DeleteContactAsync(contactId);
+        if (!result.IsNullOrEmpty())
+            return NotFound(new { message = result });
+
+        return Ok(new { message = "Contact Deleted Successfully" });
+    }
+
     [HttpGet("getAllContacts/{blindId}")]
     public async Task<IActionResult> GetAllContactsByIdAsync(string blindId)
     {
@@ -97,5 +110,58 @@ public class AccountController(IAccountService accountService) : Controller
             return NotFound(new { message = $"Error in Deleting Account: {result}" });
 
         return Ok(new { message = "Account Deleted Successfully" });
+    }
+
+    [HttpGet("GetNotificationsByGlassesId/{glassesId}")]
+    public async Task<IActionResult> GetNotificationsByGlassesIdAsync(string glassesId)
+    {
+        var result = await _notificationService.GetNotificationsByGlassesIdAsync(glassesId);
+
+        if (result is null)
+            return NotFound(new { message = "glassesId is not found" });
+
+        return Ok(result);
+    }
+
+    //delete all notifications for a specific glasses
+    [HttpPost("DeleteNotifications/{glassesId}")]
+    public async Task<IActionResult> DeleteNotificationsAsync(string glassesId)
+    {
+        var result = await _notificationService.DeleteNotificationsAsync(glassesId);
+        if (result.Message is not null)
+            return NotFound(new { message = result.Message });
+
+        return Ok(new { message = "Notifications Deleted Successfully" });
+    }
+
+    //delete notification by id
+    [HttpPost("DeleteNotificationById/{notificationId}")]
+    public async Task<IActionResult> DeleteNotificationAsync(int notificationId)
+    {
+        var result = await _notificationService.DeleteNotificationAsync(notificationId);
+        if (result.Message is not null)
+            return NotFound(new { message = result.Message });
+
+        return Ok(new { message = "Notification Deleted Successfully" });
+    }
+
+    [HttpPost("ReadNotification/{notificationId}")]
+    public async Task<IActionResult> ReadNotificationAsync(int notificationId)
+    {
+        var result = await _notificationService.ReadNotificationAsync(notificationId);
+        if (result is not null)
+            return NotFound(new { message = result });
+
+        return Ok(new { message = "Notification Read Successfully" });
+    }
+
+    [HttpPost("ReadAllNotifications/{glassesId}")]
+    public async Task<IActionResult> ReadAllNotificationsAsync(string glassesId)
+    {
+        var result = await _notificationService.ReadAllNotificationsAsync(glassesId);
+        if (result is not null)
+            return NotFound(new { message = result });
+
+        return Ok(new { message = "All Notifications Read Successfully" });
     }
 }

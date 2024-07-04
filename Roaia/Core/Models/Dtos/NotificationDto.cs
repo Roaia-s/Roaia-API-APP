@@ -1,6 +1,6 @@
 ﻿namespace Roaia.Core.Models.Dtos;
 
-public class MessageDto
+public class NotificationDto
 {
     [MaxLength(100, ErrorMessage = Errors.MaxLength)]
     public string Title { get; set; }
@@ -22,5 +22,7 @@ public class MessageDto
         RegularExpression(RegexPatterns.GUID, ErrorMessage = Errors.InvalidGUID),
         Display(Name = "Glasses Id")]
     public string GlassesId { get; set; }
+    [AllowedValues("Normal", "Warning", "Critical", ErrorMessage = Errors.InvalidNotificationType)]
+    public string Type { get; set; }
     public string? Message { get; set; }
 }
