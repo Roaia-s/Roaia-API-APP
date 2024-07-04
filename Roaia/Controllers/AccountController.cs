@@ -81,6 +81,17 @@ public class AccountController(IAccountService accountService, INotificationServ
         return Ok(result);
     }
 
+    //Delete contact by id
+    [HttpPost("DeleteContact/{contactId}")]
+    public async Task<IActionResult> DeleteContactAsync(int contactId)
+    {
+        var result = await _accountService.DeleteContactAsync(contactId);
+        if (!result.IsNullOrEmpty())
+            return NotFound(new { message = result });
+
+        return Ok(new { message = "Contact Deleted Successfully" });
+    }
+
     [HttpGet("getAllContacts/{blindId}")]
     public async Task<IActionResult> GetAllContactsByIdAsync(string blindId)
     {
@@ -105,8 +116,9 @@ public class AccountController(IAccountService accountService, INotificationServ
     public async Task<IActionResult> GetNotificationsByGlassesIdAsync(string glassesId)
     {
         var result = await _notificationService.GetNotificationsByGlassesIdAsync(glassesId);
-        if (result.IsNullOrEmpty())
-            return NotFound(new { message = "glassesId is not found, or no notifications found" });
+
+        if (result is null)
+            return NotFound(new { message = "glassesId is not found" });
 
         return Ok(result);
     }
@@ -120,5 +132,36 @@ public class AccountController(IAccountService accountService, INotificationServ
             return NotFound(new { message = result.Message });
 
         return Ok(new { message = "Notifications Deleted Successfully" });
+    }
+
+    //delete notification by id
+    [HttpPost("DeleteNotificationById/{notificationId}")]
+    public async Task<IActionResult> DeleteNotificationAsync(int notificationId)
+    {
+        var result = await _notificationService.DeleteNotificationAsync(notificationId);
+        if (result.Message is not null)
+            return NotFound(new { message = result.Message });
+
+        return Ok(new { message = "Notification Deleted Successfully" });
+    }
+
+    [HttpPost("ReadNotification/{notificationId}")]
+    public async Task<IActionResult> ReadNotificationAsync(int notificationId)
+    {
+        var result = await _notificationService.ReadNotificationAsync(notificationId);
+        if (result is not null)
+            return NotFound(new { message = result });
+
+        return Ok(new { message = "Notification Read Successfully" });
+    }
+
+    [HttpPost("ReadAllNotifications/{glassesId}")]
+    public async Task<IActionResult> ReadAllNotificationsAsync(string glassesId)
+    {
+        var result = await _notificationService.ReadAllNotificationsAsync(glassesId);
+        if (result is not null)
+            return NotFound(new { message = result });
+
+        return Ok(new { message = "All Notifications Read Successfully" });
     }
 }

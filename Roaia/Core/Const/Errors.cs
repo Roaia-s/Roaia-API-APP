@@ -24,4 +24,5 @@ public static class Errors
     public const string InvalidImageUrl = "Invalid image URL. Only (*.jpg *.jpeg *.png) files are allowed!";
     public const string InvalidAudioUrl = "Invalid audio URL. Only (*.mp3 *.wav *m4a) files are allowed!";
     public const string InvalidVideoUrl = "Invalid video URL. Only (*.mp4) files are allowed!";
+    public const string InvalidNotificationType = "Type must be either 'Normal', 'Warning', or 'Critical'!";
 }

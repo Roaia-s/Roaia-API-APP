@@ -61,7 +61,7 @@ public class GlassesController(IAccountService accountService, INotificationServ
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var result = await _notificationService.SendMessageAsync(request);
+        var result = await _notificationService.SendNotificationAsync(request);
 
         if (result.Message is not null)
             return BadRequest(new { message = result.Message });
@@ -77,9 +77,24 @@ public class GlassesController(IAccountService accountService, INotificationServ
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        await _hubContext.Clients.Group(gpsData.GlassesId)
-            .SendAsync("ReceiveGPSData", gpsData.Latitude, gpsData.Longitude);
+        await _hubContext.Clients.Group(gpsData.GlassesId).SendAsync("ReceiveGpsData", gpsData);
 
-        return Ok("Done.");
+        return Ok("sent successfully!");
+    }
+
+    // add notification to database
+    [HttpPost("ManualNotification")]
+    public async Task<IActionResult> ManualNotification([FromBody] NotificationDto request)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var result = await _accountService.ManualNotificationAsync(request);
+
+        if (result.Message is not null)
+            return BadRequest(new { message = result.Message });
+
+        result.Message = "Notification added successfully!";
+        return Ok(result);
     }
 }

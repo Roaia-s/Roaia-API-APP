@@ -12,4 +12,6 @@ public class AppNotification
     public virtual Glasses? Glasses { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     public bool IsRead { get; set; }
+    // add Type property here and dafult value is "Normal"
+    public string Type { get; set; } = "Normal";
 }

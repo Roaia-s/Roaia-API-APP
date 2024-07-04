@@ -1,14 +1,21 @@
-﻿namespace Roaia.Services;
+﻿using Azure.Core;
+
+namespace Roaia.Services;
 
 public class AccountService(UserManager<ApplicationUser> userManager,
     ApplicationDbContext context,
-    IConfiguration configuration, IImageService imageService) : IAccountService
+    IConfiguration configuration,
+    IImageService imageService,
+    INotificationService notificationService,
+    IOptions<NotificationSettings> notificationSettings) : IAccountService
 {
     private readonly UserManager<ApplicationUser> _userManager = userManager;
     private readonly ApplicationDbContext _context = context;
 
     private readonly IConfiguration _configuration = configuration;
     private readonly IImageService _imageService = imageService;
+    private readonly INotificationService _notificationService = notificationService;
+    private readonly NotificationSettings _notificationSettings = notificationSettings.Value;
 
     public async Task<UserInfoDto> GetUserInformationAsync(string email)
     {
@@ -230,6 +237,18 @@ public class AccountService(UserManager<ApplicationUser> userManager,
         await _context.Contacts.AddAsync(contact);
         await _context.SaveChangesAsync();
 
+        // send notification to the blind
+        await _notificationService.SendNotificationAsync(new NotificationDto
+        {
+            Title = _notificationSettings.Title,
+            Body = $"{_notificationSettings.Body} {contact.FullName}. Make a positive impact on their journey!",
+            ImageUrl = _notificationSettings.ImageUrl,
+            AudioUrl = _notificationSettings.AudioUrl,
+            GlassesId = contact.GlassesId,
+            Type = _notificationSettings.Type
+        });
+
+
         ContactDto contactDto = new()
         {
             Id = contact.Id,
@@ -286,6 +305,45 @@ public class AccountService(UserManager<ApplicationUser> userManager,
         var tokens = await _context.DeviceTokens.Where(t => t.UserId == userId).ToListAsync();
 
         _context.DeviceTokens.RemoveRange(tokens);
+        await _context.SaveChangesAsync();
+
+        return message;
+    }
+
+    public async Task<NotificationDto> ManualNotificationAsync(NotificationDto request)
+    {
+        if(await _context.Glasses.SingleOrDefaultAsync(g => g.Id == request.GlassesId) is null)
+            return new NotificationDto { Message = "This Id Does Not  Exist" };
+
+        var notification = new AppNotification
+        {
+            Title = request.Title,
+            Body = request.Body,
+            ImageUrl = request.ImageUrl,
+            AudioUrl = request.AudioUrl,
+            GlassesId = request.GlassesId,
+            Type = request.Type,
+            IsRead = false
+        };
+
+        await _context.Notifications.AddAsync(notification);
+        await _context.SaveChangesAsync();
+
+        return request;
+    }
+
+    public async Task<string> DeleteContactAsync(int contactId)
+    {
+        var message = string.Empty;
+        var contact = await _context.Contacts.FindAsync(contactId);
+        if (contact is null)
+            return message = "This Contact Does Not  Exist";
+
+        //delete Contact image from server
+        if (!string.IsNullOrEmpty(contact.ImageUrl))
+            _imageService.Delete(contact.ImageUrl);
+
+        _context.Contacts.Remove(contact);
         await _context.SaveChangesAsync();
 
         return message;

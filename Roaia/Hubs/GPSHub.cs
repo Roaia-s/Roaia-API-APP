@@ -13,10 +13,4 @@ public sealed class GPSHub : Hub
     {
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, glassesId);
     }
-
-    // send gps data to users with the same glasses id
-    public async Task SendGPSData(GpsDto gpsData)
-    {
-        await Clients.Group(gpsData.GlassesId).SendAsync("ReceiveGPSData", gpsData.Latitude, gpsData.Longitude);
-    }
 }

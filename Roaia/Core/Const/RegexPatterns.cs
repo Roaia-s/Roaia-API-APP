@@ -15,5 +15,6 @@ public static class RegexPatterns
     public const string ImageUrl = @"(http(s?):)([/|.|w|s|-|:|?|=|%|&|(|)|+|,|A-Z|a-z|0-9|/|_|-])+\.(?:jpg|jpeg|png)";
     public const string AudioUrl = @"(http(s?):)([/|.|w|s|-|:|?|=|%|&|(|)|+|,|A-Z|a-z|0-9|/|_|-])+\.(?:mp3|wav|m4a)";
     public const string VideoUrl = @"(http(s?):)([/|.|w|s|-|:|?|=|%|&|(|)|+|,|A-Z|a-z|0-9|/|_|-])+\.(?:mp4)";
+    public const string NotificationType = "Normal|Warning|Critical";
 
 }
