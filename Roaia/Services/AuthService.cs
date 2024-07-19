@@ -110,17 +110,23 @@ public class AuthService(UserManager<ApplicationUser> userManager,
         var user = await _userManager.Users
             .SingleOrDefaultAsync(u => (u.NormalizedUserName == email || u.NormalizedEmail == email || u.PhoneNumber == email) && !u.IsDeleted);
 
-        if (user is null || !await _userManager.CheckPasswordAsync(user, dto.Password))
+        if (user is null)
+            return new AuthDto { Message = "Email or Password is incorrect!" };
+
+        if (await _userManager.IsLockedOutAsync(user))
+            return new AuthDto { Message = "This account has been locked out due to multiple failed login attempts. Please try again later." };
+
+        if (!await _userManager.CheckPasswordAsync(user, dto.Password))
         {
-            auth.Message = "Email or Password is incorrect!";
-            return auth;
+            await _userManager.AccessFailedAsync(user);
+            return new AuthDto { Message = "Email or Password is incorrect!" };
         }
 
         if (!user.EmailConfirmed)
-        {
-            auth.Message = "Please verify your email address!";
-            return auth;
-        }
+            return new AuthDto { Message = "Please verify your email address!" };
+
+
+        await _userManager.ResetAccessFailedCountAsync(user);
 
         if (!dto.DeviceToken.IsNullOrEmpty())
         {
@@ -132,11 +138,14 @@ public class AuthService(UserManager<ApplicationUser> userManager,
                 deviceToken = new DeviceToken
                 {
                     Token = dto.DeviceToken,
-                    LastUpdatedOn = DateTime.Now,
                     GlassesId = user.GlassesId,
                     UserId = user.Id
                 };
-                _context.DeviceTokens.Add(deviceToken);
+                _context.Add(deviceToken);
+            }
+            else
+            {
+                deviceToken.LastUpdatedOn = DateTime.Now;
             }
             await _context.SaveChangesAsync();
         }
@@ -169,218 +178,359 @@ public class AuthService(UserManager<ApplicationUser> userManager,
         return auth;
     }
 
-    //public async Task<AuthDto> GoogleLoginAsync(string idToken)
-    //{
-    //	AuthDto auth = new();
-    //	var payload = await GoogleJsonWebSignature.ValidateAsync(idToken);
+    /*public async Task<AuthDto> GoogleLoginAsync(string idToken)
+    {
+    	AuthDto auth = new();
+    	var payload = await GoogleJsonWebSignature.ValidateAsync(idToken);
 
-    //	if (payload is null)
-    //	{
-    //		auth.Message = "Invalid Google Token";
-    //		return auth;
-    //	}
+    	if (payload is null)
+    	{
+    		auth.Message = "Invalid Google Token";
+    		return auth;
+    	}
 
-    //	var user = await _userManager.FindByEmailAsync(payload.Email);
+    	var user = await _userManager.FindByEmailAsync(payload.Email);
 
-    //	if (user is null)
-    //	{
-    //		user = new ApplicationUser
-    //		{
-    //			UserName = payload.Email,
-    //			Email = payload.Email,
-    //			FirstName = payload.GivenName,
-    //			LastName = payload.FamilyName,
-    //			ImageUrl = payload.Picture,
-    //			IsAgree = true,
-    //			CreatedOn = DateTime.Now
-    //		};
+    	if (user is null)
+    	{
+    		user = new ApplicationUser
+    		{
+    			UserName = payload.Email,
+    			Email = payload.Email,
+    			FirstName = payload.GivenName,
+    			LastName = payload.FamilyName,
+    			ImageUrl = payload.Picture,
+    			IsAgree = true,
+    			CreatedOn = DateTime.Now
+    		};
 
-    //		var result = await _userManager.CreateAsync(user);
+    		var result = await _userManager.CreateAsync(user);
 
-    //		if (!result.Succeeded)
-    //		{
-    //			var errors = string.Empty;
+    		if (!result.Succeeded)
+    		{
+    			var errors = string.Empty;
 
-    //			foreach (var error in result.Errors)
-    //				errors += $"{error.Description},";
+    			foreach (var error in result.Errors)
+    				errors += $"{error.Description},";
 
-    //			auth.Message = errors;
-    //			return auth;
-    //		}
+    			auth.Message = errors;
+    			return auth;
+    		}
 
-    //		await _userManager.AddToRoleAsync(user, "User");
-    //	}
+    		await _userManager.AddToRoleAsync(user, "User");
+    	}
 
-    //	var jwtSecurityToken = await CreateJwtToken(user);
-    //	var rolesList = await _userManager.GetRolesAsync(user);
+    	var jwtSecurityToken = await CreateJwtToken(user);
+    	var rolesList = await _userManager.GetRolesAsync(user);
 
-    //	auth.IsAuthenticated = true;
-    //	auth.Token = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
-    //	auth.Email = user.Email;
-    //	auth.Username = user.UserName;
-    //	auth.ExpiresOn = jwtSecurityToken.ValidTo;
-    //	auth.Roles = rolesList.ToList();
+    	auth.IsAuthenticated = true;
+    	auth.Token = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
+    	auth.Email = user.Email;
+    	auth.Username = user.UserName;
+    	auth.ExpiresOn = jwtSecurityToken.ValidTo;
+    	auth.Roles = rolesList.ToList();
 
-    //	if (user.RefreshTokens.Any(t => t.IsActive))
-    //	{
-    //		var activeRefreshToken = user.RefreshTokens.FirstOrDefault(t => t.IsActive);
-    //		auth.RefreshToken = activeRefreshToken.Token;
-    //		auth.RefreshTokenExpiration = activeRefreshToken.ExpiresOn;
-    //	}
-    //	else
-    //	{
-    //		var refreshToken = GenerateRefreshToken();
-    //		auth.RefreshToken = refreshToken.Token;
-    //		auth.RefreshTokenExpiration = refreshToken.ExpiresOn;
-    //		user.RefreshTokens.Add(refreshToken);
-    //		await _userManager.UpdateAsync(user);
-    //	}
+    	if (user.RefreshTokens.Any(t => t.IsActive))
+    	{
+    		var activeRefreshToken = user.RefreshTokens.FirstOrDefault(t => t.IsActive);
+    		auth.RefreshToken = activeRefreshToken.Token;
+    		auth.RefreshTokenExpiration = activeRefreshToken.ExpiresOn;
+    	}
+    	else
+    	{
+    		var refreshToken = GenerateRefreshToken();
+    		auth.RefreshToken = refreshToken.Token;
+    		auth.RefreshTokenExpiration = refreshToken.ExpiresOn;
+    		user.RefreshTokens.Add(refreshToken);
+    		await _userManager.UpdateAsync(user);
+    	}
 
-    //	return auth;
-    //}
+    	return auth;
+    }*/
 
-    //public async Task<AuthDto> FacebookLoginAsync(string accessToken)
-    //{
-    //	AuthDto auth = new();
-    //	var fb = new FacebookClient(accessToken);
-    //	dynamic response = await fb.GetTaskAsync("me", new { fields = "id, name, email, picture" });
+    /*public async Task<AuthDto> FacebookLoginAsync(string accessToken)
+    {
+    	AuthDto auth = new();
+    	var fb = new FacebookClient(accessToken);
+    	dynamic response = await fb.GetTaskAsync("me", new { fields = "id, name, email, picture" });
 
-    //	if (response is null)
-    //	{
-    //		auth.Message = "Invalid Facebook Token";
-    //		return auth;
-    //	}
+    	if (response is null)
+    	{
+    		auth.Message = "Invalid Facebook Token";
+    		return auth;
+    	}
 
-    //	var user = await _userManager.FindByEmailAsync(response.email);
+    	var user = await _userManager.FindByEmailAsync(response.email);
 
-    //	if (user is null)
-    //	{
-    //		user = new ApplicationUser
-    //		{
-    //			UserName = response.email,
-    //			Email = response.email,
-    //			FirstName = response.name,
-    //			LastName = response.name,
-    //			ImageUrl = response.picture.data.url,
-    //			IsAgree = true,
-    //			CreatedOn = DateTime.Now
-    //		};
+    	if (user is null)
+    	{
+    		user = new ApplicationUser
+    		{
+    			UserName = response.email,
+    			Email = response.email,
+    			FirstName = response.name,
+    			LastName = response.name,
+    			ImageUrl = response.picture.data.url,
+    			IsAgree = true,
+    			CreatedOn = DateTime.Now
+    		};
 
-    //		var result = await _userManager.CreateAsync(user);
+    		var result = await _userManager.CreateAsync(user);
 
-    //		if (!result.Succeeded)
-    //		{
-    //			var errors = string.Empty;
+    		if (!result.Succeeded)
+    		{
+    			var errors = string.Empty;
 
-    //			foreach (var error in result.Errors)
-    //				errors += $"{error.Description},";
+    			foreach (var error in result.Errors)
+    				errors += $"{error.Description},";
 
-    //			auth.Message = errors;
-    //			return auth;
-    //		}
+    			auth.Message = errors;
+    			return auth;
+    		}
 
-    //		await _userManager.AddToRoleAsync(user, "User");
-    //	}
+    		await _userManager.AddToRoleAsync(user, "User");
+    	}
 
-    //	var jwtSecurityToken = await CreateJwtToken(user);
-    //	var rolesList = await _userManager.GetRolesAsync(user);
+    	var jwtSecurityToken = await CreateJwtToken(user);
+    	var rolesList = await _userManager.GetRolesAsync(user);
 
-    //	auth.IsAuthenticated = true;
-    //	auth.Token = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
-    //	auth.Email = user.Email;
-    //	auth.Username = user.UserName;
-    //	auth.ExpiresOn = jwtSecurityToken.ValidTo;
-    //	auth.Roles = rolesList.ToList();
+    	auth.IsAuthenticated = true;
+    	auth.Token = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
+    	auth.Email = user.Email;
+    	auth.Username = user.UserName;
+    	auth.ExpiresOn = jwtSecurityToken.ValidTo;
+    	auth.Roles = rolesList.ToList();
 
-    //	if (user.RefreshTokens.Any(t => t.IsActive))
-    //	{
-    //		var activeRefreshToken = user.RefreshTokens.FirstOrDefault(t => t.IsActive);
-    //		auth.RefreshToken = activeRefreshToken.Token;
-    //		auth.RefreshTokenExpiration = activeRefreshToken.ExpiresOn;
-    //	}
-    //	else
-    //	{
-    //		var refreshToken = GenerateRefreshToken();
-    //		auth.RefreshToken = refreshToken.Token;
-    //		auth.RefreshTokenExpiration = refreshToken.ExpiresOn;
-    //		user.RefreshTokens.Add(refreshToken);
-    //		await _userManager.UpdateAsync(user);
-    //	}
+    	if (user.RefreshTokens.Any(t => t.IsActive))
+    	{
+    		var activeRefreshToken = user.RefreshTokens.FirstOrDefault(t => t.IsActive);
+    		auth.RefreshToken = activeRefreshToken.Token;
+    		auth.RefreshTokenExpiration = activeRefreshToken.ExpiresOn;
+    	}
+    	else
+    	{
+    		var refreshToken = GenerateRefreshToken();
+    		auth.RefreshToken = refreshToken.Token;
+    		auth.RefreshTokenExpiration = refreshToken.ExpiresOn;
+    		user.RefreshTokens.Add(refreshToken);
+    		await _userManager.UpdateAsync(user);
+    	}
 
-    //	return auth;
-    //}
+    	return auth;
+    }*/
 
-    //public async Task<AuthDto> TwitterLoginAsync(string accessToken, string accessTokenSecret)
-    //{
-    //	AuthDto auth = new();
-    //	var twitter = new TwitterClient(accessToken, accessTokenSecret);
-    //	var userResponse = await twitter.Users.GetAuthenticatedUserAsync();
+    /*public async Task<AuthDto> TwitterLoginAsync(string accessToken, string accessTokenSecret)
+    {
+    	AuthDto auth = new();
+    	var twitter = new TwitterClient(accessToken, accessTokenSecret);
+    	var userResponse = await twitter.Users.GetAuthenticatedUserAsync();
 
-    //	if (userResponse is null)
-    //	{
-    //		auth.Message = "Invalid Twitter Token";
-    //		return auth;
-    //	}
+    	if (userResponse is null)
+    	{
+    		auth.Message = "Invalid Twitter Token";
+    		return auth;
+    	}
 
-    //	var user = await _userManager.FindByEmailAsync(userResponse.Email);
+    	var user = await _userManager.FindByEmailAsync(userResponse.Email);
 
-    //	if (user is null)
-    //	{
-    //		user = new ApplicationUser
-    //		{
-    //			UserName = userResponse.Email,
-    //			Email = userResponse.Email,
-    //			FirstName = userResponse.Name,
-    //			LastName = userResponse.Name,
-    //			ImageUrl = userResponse.ProfileImageUrl,
-    //			IsAgree = true,
-    //			CreatedOn = DateTime.Now
-    //		};
+    	if (user is null)
+    	{
+    		user = new ApplicationUser
+    		{
+    			UserName = userResponse.Email,
+    			Email = userResponse.Email,
+    			FirstName = userResponse.Name,
+    			LastName = userResponse.Name,
+    			ImageUrl = userResponse.ProfileImageUrl,
+    			IsAgree = true,
+    			CreatedOn = DateTime.Now
+    		};
 
-    //		var result = await _userManager.CreateAsync(user);
+    		var result = await _userManager.CreateAsync(user);
 
-    //		if (!result.Succeeded)
-    //		{
-    //			var errors = string.Empty;
+    		if (!result.Succeeded)
+    		{
+    			var errors = string.Empty;
 
-    //			foreach (var error in result.Errors)
-    //				errors += $"{error.Description},";
+    			foreach (var error in result.Errors)
+    				errors += $"{error.Description},";
 
-    //			auth.Message = errors;
-    //			return auth;
-    //		}
+    			auth.Message = errors;
+    			return auth;
+    		}
 
-    //		await _userManager.AddToRoleAsync(user, "User");
-    //	}
+    		await _userManager.AddToRoleAsync(user, "User");
+    	}
 
-    //	var jwtSecurityToken = await CreateJwtToken(user);
-    //	var rolesList = await _userManager.GetRolesAsync(user);
+    	var jwtSecurityToken = await CreateJwtToken(user);
+    	var rolesList = await _userManager.GetRolesAsync(user);
 
-    //	auth.IsAuthenticated = true;
-    //	auth.Token = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
-    //	auth.Email = user.Email;
-    //	auth.Username = user.UserName;
-    //	auth.ExpiresOn = jwtSecurityToken.ValidTo;
-    //	auth.Roles = rolesList.ToList();
+    	auth.IsAuthenticated = true;
+    	auth.Token = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
+    	auth.Email = user.Email;
+    	auth.Username = user.UserName;
+    	auth.ExpiresOn = jwtSecurityToken.ValidTo;
+    	auth.Roles = rolesList.ToList();
 
-    //	if (user.RefreshTokens.Any(t => t.IsActive))
-    //	{
-    //		var activeRefreshToken = user.RefreshTokens.FirstOrDefault(t => t.IsActive);
-    //		auth.RefreshToken = activeRefreshToken.Token;
-    //		auth.RefreshTokenExpiration = activeRefreshToken.ExpiresOn;
-    //	}
-    //	else
-    //	{
-    //		var refreshToken = GenerateRefreshToken();
-    //		auth.RefreshToken = refreshToken.Token;
-    //		auth.RefreshTokenExpiration = refreshToken.ExpiresOn;
-    //		user.RefreshTokens.Add(refreshToken);
-    //		await _userManager.UpdateAsync(user);
-    //	}
+    	if (user.RefreshTokens.Any(t => t.IsActive))
+    	{
+    		var activeRefreshToken = user.RefreshTokens.FirstOrDefault(t => t.IsActive);
+    		auth.RefreshToken = activeRefreshToken.Token;
+    		auth.RefreshTokenExpiration = activeRefreshToken.ExpiresOn;
+    	}
+    	else
+    	{
+    		var refreshToken = GenerateRefreshToken();
+    		auth.RefreshToken = refreshToken.Token;
+    		auth.RefreshTokenExpiration = refreshToken.ExpiresOn;
+    		user.RefreshTokens.Add(refreshToken);
+    		await _userManager.UpdateAsync(user);
+    	}
 
-    //	return auth;
-    //}
+    	return auth;
+    }*/
 
+    /*public async Task<AuthDto> LinkedInLoginAsync(string accessToken)
+    {
+    	AuthDto auth = new();
+    	var linkedIn = new LinkedInClient(accessToken);
+    	var userResponse = await linkedIn.GetCurrentUserAsync();
+
+    	if (userResponse is null)
+    	{
+    		auth.Message = "Invalid LinkedIn Token";
+    		return auth;
+    	}
+
+    	var user = await _userManager.FindByEmailAsync(userResponse.EmailAddress);
+
+    	if (user is null)
+    	{
+    		user = new ApplicationUser
+    		{
+    			UserName = userResponse.EmailAddress,
+    			Email = userResponse.EmailAddress,
+    			FirstName = userResponse.FirstName,
+    			LastName = userResponse.LastName,
+    			ImageUrl = userResponse.ProfilePicture,
+    			IsAgree = true,
+    			CreatedOn = DateTime.Now
+    		};
+
+    		var result = await _userManager.CreateAsync(user);
+
+    		if (!result.Succeeded)
+    		{
+    			var errors = string.Empty;
+
+    			foreach (var error in result.Errors)
+    				errors += $"{error.Description},";
+
+    			auth.Message = errors;
+    			return auth;
+    		}
+
+    		await _userManager.AddToRoleAsync(user, "User");
+    	}
+
+    	var jwtSecurityToken = await CreateJwtToken(user);
+    	var rolesList = await _userManager.GetRolesAsync(user);
+
+    	auth.IsAuthenticated = true;
+    	auth.Token = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
+    	auth.Email = user.Email;
+    	auth.Username = user.UserName;
+    	auth.ExpiresOn = jwtSecurityToken.ValidTo;
+    	auth.Roles = rolesList.ToList();
+
+    	if (user.RefreshTokens.Any(t => t.IsActive))
+    	{
+    		var activeRefreshToken = user.RefreshTokens.FirstOrDefault(t => t.IsActive);
+    		auth.RefreshToken = activeRefreshToken.Token;
+    		auth.RefreshTokenExpiration = activeRefreshToken.ExpiresOn;
+    	}
+    	else
+    	{
+    		var refreshToken = GenerateRefreshToken();
+    		auth.RefreshToken = refreshToken.Token;
+    		auth.RefreshTokenExpiration = refreshToken.ExpiresOn;
+    		user.RefreshTokens.Add(refreshToken);
+    		await _userManager.UpdateAsync(user);
+    	}
+
+    	return auth;
+    }*/
+
+    /*public async Task<AuthDto> MicrosoftLoginAsync(string accessToken)
+    {
+        AuthDto auth = new();
+        var microsoft = new MicrosoftClient(accessToken);
+        var userResponse = await microsoft.GetCurrentUserAsync();
+
+        if (userResponse is null)
+        {
+            auth.Message = "Invalid Microsoft Token";
+            return auth;
+        }
+
+        var user = await _userManager.FindByEmailAsync(userResponse.Email);
+
+        if (user is null)
+        {
+            user = new ApplicationUser
+            {
+                UserName = userResponse.Email,
+                Email = userResponse.Email,
+                FirstName = userResponse.FirstName,
+                LastName = userResponse.LastName,
+                ImageUrl = userResponse.ProfilePicture,
+                IsAgree = true,
+                CreatedOn = DateTime.Now
+            };
+
+            var result = await _userManager.CreateAsync(user);
+
+            if (!result.Succeeded)
+            {
+                var errors = string.Empty;
+
+                foreach (var error in result.Errors)
+                    errors += $"{error.Description},";
+
+                auth.Message = errors;
+                return auth;
+            }
+
+            await _userManager.AddToRoleAsync(user, "User");
+        }
+
+        var jwtSecurityToken = await CreateJwtToken(user);
+        var rolesList = await _userManager.GetRolesAsync(user);
+
+        auth.IsAuthenticated = true;
+        auth.Token = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
+        auth.Email = user.Email;
+        auth.Username = user.UserName;
+        auth.ExpiresOn = jwtSecurityToken.ValidTo;
+        auth.Roles = rolesList.ToList();
+
+        if (user.RefreshTokens.Any(t => t.IsActive))
+        {
+            var activeRefreshToken = user.RefreshTokens.FirstOrDefault(t => t.IsActive);
+            auth.RefreshToken = activeRefreshToken.Token;
+            auth.RefreshTokenExpiration = activeRefreshToken.ExpiresOn;
+        }
+        else
+        {
+            var refreshToken = GenerateRefreshToken();
+            auth.RefreshToken = refreshToken.Token;
+            auth.RefreshTokenExpiration = refreshToken.ExpiresOn;
+            user.RefreshTokens.Add(refreshToken);
+            await _userManager.UpdateAsync(user);
+        }
+
+        return auth;
+    }*/
     public async Task<string> AddRoleAsync(AddRoleDto dto)
     {
         var user = await _userManager.FindByIdAsync(dto.UserId);
@@ -489,7 +639,7 @@ public class AuthService(UserManager<ApplicationUser> userManager,
             var device = await _context.DeviceTokens.SingleOrDefaultAsync(t => t.Token == dto.DeviceToken && t.UserId == user.Id);
             if (device is not null)
             {
-                _context.DeviceTokens.Remove(device);
+                _context.Remove(device);
                 await _context.SaveChangesAsync();
             }
         }
@@ -740,7 +890,7 @@ public class AuthService(UserManager<ApplicationUser> userManager,
     }
 
     // unsubscribe from mail news
-    public async Task<string> UnsubscribeMailNewsAsync(string email)
+    public async Task<string> SubscribeUnSubscribeMailNewsAsync(string email)
     {
 
         var errorMessage = string.Empty;
@@ -749,7 +899,7 @@ public class AuthService(UserManager<ApplicationUser> userManager,
         if (user is null)
             return errorMessage = "This User Does Not  Exist";
 
-        user.IsSubscribed = false;
+        user.IsSubscribed = !user.IsSubscribed;
         await _userManager.UpdateAsync(user);
 
         return errorMessage;

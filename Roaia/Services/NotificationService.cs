@@ -1,5 +1,4 @@
 ﻿using FirebaseAdmin.Messaging;
-using Roaia.Settings;
 
 namespace Roaia.Services;
 
@@ -91,7 +90,7 @@ public class NotificationService(ApplicationDbContext context, IOptions<Notifica
                 IsRead = false
             };
 
-            await _context.Notifications.AddAsync(notification);
+            await _context.AddAsync(notification);
             await _context.SaveChangesAsync();
         }
 
@@ -101,15 +100,19 @@ public class NotificationService(ApplicationDbContext context, IOptions<Notifica
                                   .Where(r => !r.IsSuccess)
                                   .Select((r, idx) => tokens[idx])
                                   .ToList();
-            // Optionally, remove or mark invalid tokens in the database
-            foreach (var token in failedTokens)
-            {
-                var deviceToken = await _context.DeviceTokens.SingleOrDefaultAsync(t => t.Token == token);
-                if (deviceToken is not null)
-                    _context.DeviceTokens.Remove(deviceToken);
-            }
+            // Optionally, remove or mark invalid tokens in the database using bulk delete query
+            await _context.DeviceTokens
+                         .Where(t => failedTokens.Contains(t.Token))
+                         .ExecuteDeleteAsync();
 
-            await _context.SaveChangesAsync();
+            //.net 6
+            //foreach (var token in failedTokens)
+            //{
+            //    var deviceToken = await _context.DeviceTokens.SingleOrDefaultAsync(t => t.Token == token);
+            //    if (deviceToken is not null)
+            //        _context.DeviceTokens.Remove(deviceToken);
+            //}
+            //_context.SaveChanges();
 
             return new NotificationDto { Message = $"Error in sending Notification, There are often invalid tokens that are now being deleted! Success Count: {response.SuccessCount} | Failure Count: {response.FailureCount}" };
         }
@@ -141,7 +144,7 @@ public class NotificationService(ApplicationDbContext context, IOptions<Notifica
         if (!notifications.Any())
             return new NotificationDto { Message = "No Notifications Found" };
 
-        _context.Notifications.RemoveRange(notifications);
+        _context.RemoveRange(notifications);
         await _context.SaveChangesAsync();
 
         return new NotificationDto();
@@ -154,39 +157,45 @@ public class NotificationService(ApplicationDbContext context, IOptions<Notifica
         if (notification is null)
             return new NotificationDto { Message = "Notification Not Found" };
 
-        _context.Notifications.Remove(notification);
+        _context.Remove(notification);
         await _context.SaveChangesAsync();
 
         return new NotificationDto();
     }
 
-    public async Task<string> ReadNotificationAsync(int notificationId)
+    public async Task<string> ToggleNotificationReadStatusAsync(int notificationId)
     {
+        string message = string.Empty;
         var notification = await _context.Notifications.FindAsync(notificationId);
 
         if (notification is null)
-            return "Notification Not Found";
+            return message = "Notification Not Found";
 
-        notification.IsRead = true;
+        notification.IsRead = !notification.IsRead;
         await _context.SaveChangesAsync();
 
-        return "Notification Read";
+        return message;
     }
 
-    public async Task<string> ReadAllNotificationsAsync(string glassesId)
+    public async Task<string> MarkAllNotificationsReadAsync(string glassesId)
     {
+        string message = string.Empty;
+
+        if (!await _context.Glasses.AnyAsync(g => g.Id == glassesId))
+            return message = "Glasses Id Not Found";
+
         var notifications = await _context.Notifications
                                         .Where(n => n.GlassesId == glassesId)
                                         .ToListAsync();
 
         if (!notifications.Any())
-            return "No Notifications Found";
+            return message = "No Notifications Found";
 
-        foreach (var notification in notifications)
-            notification.IsRead = true;
+        // Toggle all notifications read status to the opposite using bulk update query
+        await _context.Notifications
+                     .Where(n => n.GlassesId == glassesId)
+                     .ExecuteUpdateAsync(p => p.SetProperty(n => n.IsRead, true));
 
-        await _context.SaveChangesAsync();
-
-        return "All Notifications Read";
+        return message;
     }
 }

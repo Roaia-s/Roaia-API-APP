@@ -23,6 +23,7 @@ global using Roaia.Core.Mapping;
 global using Roaia.Core.Models;
 global using Roaia.Core.Models.Dtos;
 global using Roaia.Data;
+global using Roaia.Extensions;
 global using Roaia.Filter;
 global using Roaia.Helpers;
 global using Roaia.Hubs;

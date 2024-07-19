@@ -145,23 +145,23 @@ public class AccountController(IAccountService accountService, INotificationServ
         return Ok(new { message = "Notification Deleted Successfully" });
     }
 
-    [HttpPost("ReadNotification/{notificationId}")]
-    public async Task<IActionResult> ReadNotificationAsync(int notificationId)
+    [HttpPost("ToggleNotificationReadStatus/{notificationId}")]
+    public async Task<IActionResult> ToggleNotificationReadStatusAsync(int notificationId)
     {
-        var result = await _notificationService.ReadNotificationAsync(notificationId);
-        if (result is not null)
+        var result = await _notificationService.ToggleNotificationReadStatusAsync(notificationId);
+        if (!result.IsNullOrEmpty())
             return NotFound(new { message = result });
 
-        return Ok(new { message = "Notification Read Successfully" });
+        return Ok(new { message = "Notification status changed successfully" });
     }
 
-    [HttpPost("ReadAllNotifications/{glassesId}")]
-    public async Task<IActionResult> ReadAllNotificationsAsync(string glassesId)
+    [HttpPost("MarkAllNotificationsRead/{glassesId}")]
+    public async Task<IActionResult> MarkAllNotificationsReadAsync(string glassesId)
     {
-        var result = await _notificationService.ReadAllNotificationsAsync(glassesId);
-        if (result is not null)
+        var result = await _notificationService.MarkAllNotificationsReadAsync(glassesId);
+        if (!result.IsNullOrEmpty())
             return NotFound(new { message = result });
 
-        return Ok(new { message = "All Notifications Read Successfully" });
+        return Ok(new { message = "Notifications status changed successfully" });
     }
 }

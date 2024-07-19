@@ -18,5 +18,5 @@ public interface IAuthService
     Task<List<UserInfoDto>?> GetUsersInfoAsync();
     Task<UserInfoDto> GetUserByIdAsync(string userId);
     // unsubscribe from mail news
-    Task<string> UnsubscribeMailNewsAsync(string email);
+    Task<string> SubscribeUnSubscribeMailNewsAsync(string email);
 }

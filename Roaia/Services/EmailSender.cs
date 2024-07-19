@@ -21,8 +21,7 @@ public class EmailSender : IEmailSender
             From = new MailAddress(_mailSettings.Email!, _mailSettings.DisplayName),
             Subject = subject,
             Body = htmlMessage,
-            IsBodyHtml = true,
-            Priority = MailPriority.High
+            IsBodyHtml = true
         };
 
         message.To.Add(_webHostEnvironment.IsDevelopment() ? "shehabw126@gmail.com" : email);

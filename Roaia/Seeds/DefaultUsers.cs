@@ -20,7 +20,7 @@ public class DefaultUsers
 
         if (user is null)
         {
-            await userManager.CreateAsync(admin, "Roaia832.Info");
+            await userManager.CreateAsync(admin, "Roaia.Info832#");
             await userManager.AddToRoleAsync(admin, AppRoles.Admin);
         }
     }
