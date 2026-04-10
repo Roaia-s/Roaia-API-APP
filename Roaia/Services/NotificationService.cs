@@ -74,7 +74,7 @@ public class NotificationService(ApplicationDbContext context, IOptions<Notifica
             }
         };
 
-        var response = await FirebaseMessaging.DefaultInstance.SendMulticastAsync(message);
+		BatchResponse response = await FirebaseMessaging.DefaultInstance.SendMulticastAsync(message);
 
         //check if message was sent successfully and save to database?
         if (response.SuccessCount > 0)
