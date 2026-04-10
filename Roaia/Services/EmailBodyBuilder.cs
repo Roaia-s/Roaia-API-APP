@@ -1,9 +1,9 @@
 ﻿namespace Roaia.Services
 {
-    public class EmailBodyBuilder(IWebHostEnvironment webHostEnvironment, IConfiguration configuration) : IEmailBodyBuilder
+    public class EmailBodyBuilder(IWebHostEnvironment webHostEnvironment, IOptions<ApplicationSettings> applicationSettings) : IEmailBodyBuilder
     {
         private readonly IWebHostEnvironment _webHostEnvironment = webHostEnvironment;
-        private readonly IConfiguration _configuration = configuration;
+        private readonly IOptions<ApplicationSettings> _applicationSettings = applicationSettings;
 
 
         public string GetEmailBody(string fileName)
@@ -32,11 +32,13 @@
                 .Replace("[warning]", warning)
                 .Replace("[url]", url)
                 .Replace("[linkTitle]", linkTitle)
-                .Replace("[feedback]", _configuration.GetSection("Application:Feedback").Value)
-                .Replace("[twitter]", _configuration.GetSection("Application:Twitter").Value)
-                .Replace("[linkedin]", _configuration.GetSection("Application:Linkedin").Value)
-                .Replace("[facebook]", _configuration.GetSection("Application:Facebook").Value)
-                .Replace("[instagram]", _configuration.GetSection("Application:Instagram").Value);
+                .Replace("[feedback]", _applicationSettings.Value.Feedback)
+                .Replace("[twitter]", _applicationSettings.Value.Twitter)
+                .Replace("[linkedin]", _applicationSettings.Value.Linkedin)
+                .Replace("[facebook]", _applicationSettings.Value.Facebook)
+                .Replace("[instagram]", _applicationSettings.Value.Instagram)
+                .Replace("[appName]", _applicationSettings.Value.AppName)
+                .Replace("[year]", DateTime.Now.Year.ToString());
         }
     }
 }

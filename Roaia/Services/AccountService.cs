@@ -1,6 +1,4 @@
-﻿using Azure.Core;
-
-namespace Roaia.Services;
+﻿namespace Roaia.Services;
 
 public class AccountService(UserManager<ApplicationUser> userManager,
     ApplicationDbContext context,
@@ -64,22 +62,20 @@ public class AccountService(UserManager<ApplicationUser> userManager,
 
     public async Task<BlindInfoDto> ModifyBlindInfoAsync(BlindInfoDto dto)
     {
-        var blind = await _context.Glasses.Include(d => d.Diseases).SingleOrDefaultAsync(g => g.Id == dto.Id);
+        var blind = await _context.Glasses.SingleOrDefaultAsync(g => g.Id == dto.Id);
 
         if (blind is null)
-            return new BlindInfoDto { Message = "This Id Does Not  Exist" };
+            return new BlindInfoDto { Message = "This Id Does Not Exist" };
 
         if (dto.ImageUpload is not null)
         {
             var imageName = $"{Guid.NewGuid()}{Path.GetExtension(dto.ImageUpload.FileName)}";
             var (isUploaded, errorMessage) = await _imageService.UploadAsync(dto.ImageUpload,
-                imageName,
-                $"/images/blind", hasThumbnail: false);
+                imageName, "/images/blind", hasThumbnail: false);
 
             if (!isUploaded)
                 return new BlindInfoDto { Message = errorMessage };
 
-            //to do delete old image    Done ☻
             if (!string.IsNullOrEmpty(blind.ImageUrl))
                 _imageService.Delete(blind.ImageUrl);
 
@@ -90,51 +86,43 @@ public class AccountService(UserManager<ApplicationUser> userManager,
         blind.Age = dto.Age;
         blind.Gender = dto.Gender;
 
-        // to do update diseases or add new diseases to the blind
         if (dto.Diseases is not null)
         {
-            var diseases = await _context.Diseases.Where(d => d.GlassesId == dto.Id).OrderBy(d => d.Name).ToListAsync();
-            var newDiseases = dto.Diseases.Except(diseases.Select(d => d.Name)).ToList();
-            var removedDiseases = diseases.Select(d => d.Name).Except(dto.Diseases).ToList();
+            var existingDiseases = await _context.Diseases
+                                                 .Where(d => d.GlassesId == blind.Id)
+                                                 .ToListAsync();
 
-            if (newDiseases.Count > 0)
+            var existingDiseaseNames = existingDiseases.Select(d => d.Name).ToList();
+            var newDiseases = dto.Diseases.Except(existingDiseaseNames).ToList();
+            var removedDiseases = existingDiseases.Where(d => !dto.Diseases.Contains(d.Name)).ToList();
+
+            if (newDiseases.Any())
             {
-                foreach (var disease in newDiseases)
-                {
-                    var newDisease = new Disease
-                    {
-                        Name = disease,
-                        GlassesId = blind.Id
-                    };
-
-                    await _context.Diseases.AddAsync(newDisease);
-                }
+                foreach (var diseaseName in newDiseases)
+                    _context.Add(new Disease { Name = diseaseName, GlassesId = blind.Id });
             }
 
-            if (removedDiseases.Count > 0)
-            {
-                foreach (var disease in removedDiseases)
-                {
-                    var removedDisease = diseases.SingleOrDefault(d => d.Name == disease);
-                    _context.Diseases.Remove(removedDisease);
-                }
-            }
+            if (removedDiseases.Any())
+                _context.Diseases.RemoveRange(removedDiseases);
         }
 
         await _context.SaveChangesAsync();
 
+        var orderedDiseases = await _context.Diseases
+                                            .Where(d => d.GlassesId == blind.Id)
+                                            .OrderBy(d => d.Name)
+                                            .Select(d => d.Name)
+                                            .ToListAsync();
 
-        BlindInfoDto blindInfo = new()
+        return new BlindInfoDto
         {
             Id = blind.Id,
             FullName = blind.FullName!,
             Age = blind.Age,
             Gender = blind.Gender!,
             ImageUrl = $"{_configuration.GetSection("Application:AppDomain").Value}{blind.ImageUrl}",
-            Diseases = blind.Diseases.Select(d => d.Name).ToList()
+            Diseases = orderedDiseases,
         };
-
-        return blindInfo;
     }
 
     public async Task<string> GenerateGlassesIdAsync()
@@ -150,7 +138,7 @@ public class AccountService(UserManager<ApplicationUser> userManager,
             ImageUrl = FileSettings.defaultImagesPath
         };
 
-        await _context.Glasses.AddAsync(glasses);
+        await _context.AddAsync(glasses);
         await _context.SaveChangesAsync();
 
         return glassesId;
@@ -158,7 +146,7 @@ public class AccountService(UserManager<ApplicationUser> userManager,
 
     public async Task<ContactDto> ModifyContactInfoAsync(ContactDto dto)
     {
-        var contact = await _context.Contacts.SingleOrDefaultAsync(c => (c.Id == dto.Id || c.FullName == dto.Name) && c.GlassesId == dto.BlindId);
+        var contact = await _context.Contacts.SingleOrDefaultAsync(c => ((c.Id == dto.Id || c.FullName == dto.Name) && !c.IsDeleted) && c.GlassesId == dto.BlindId);
         if (contact is null)
             return new ContactDto { Message = "This Contact Does Not  Exist" };
 
@@ -201,16 +189,27 @@ public class AccountService(UserManager<ApplicationUser> userManager,
 
     public async Task<ContactDto> AddContactAsync(ContactDto dto)
     {
-        var blind = await _context.Glasses.FindAsync(dto.BlindId);
+        var blind = await _context.Glasses.Include(g => g.Contacts).FirstOrDefaultAsync(g => g.Id == dto.BlindId);
 
         if (blind is null)
             return new ContactDto { Message = "This Id Does Not  Exist" };
 
-        //var contactsCount = await _context.Contacts.CountAsync(c => c.GlassesId == dto.BlindId);
+        // Check subscription expiry
+        if (blind.SubscriptionExpiryDate.HasValue && blind.SubscriptionExpiryDate.Value < DateTime.UtcNow)
+        {
+            // Reset to free plan if subscription expired
+            blind.MaxContacts = 7;
+            blind.SubscriptionExpiryDate = null;
+            var contacts = blind.Contacts.Skip(7).ToList();
+            contacts.ForEach(c => c.IsDeleted = true);
+            await _context.SaveChangesAsync();
+        }
 
-        //if (contactsCount >= 7)
-        //    return new ContactDto { Message = "The number of contacts exceeds the limit of the free plan!" };
+        // Check the current number of contacts
+        var contactsCount = blind.Contacts.Count;
 
+        if (contactsCount >= blind.MaxContacts)
+            return new ContactDto { Message = "The number of contacts exceeds the limit of your current plan!" };
 
         if (dto.ImageUpload is not null)
         {
@@ -234,7 +233,7 @@ public class AccountService(UserManager<ApplicationUser> userManager,
             GlassesId = dto.BlindId
         };
 
-        await _context.Contacts.AddAsync(contact);
+        await _context.AddAsync(contact);
         await _context.SaveChangesAsync();
 
         // send notification to the blind
@@ -265,7 +264,7 @@ public class AccountService(UserManager<ApplicationUser> userManager,
     //
     public async Task<List<Contact>?> GetAllContactsByIdAsync(string blindId)
     {
-        var contacts = await _context.Contacts.Where(c => c.GlassesId == blindId).AsNoTracking().ToListAsync();
+        var contacts = await _context.Contacts.Where(c => c.GlassesId == blindId && !c.IsDeleted).AsNoTracking().ToListAsync();
         if (contacts.Count is 0)
             return null;
 
@@ -277,7 +276,7 @@ public class AccountService(UserManager<ApplicationUser> userManager,
 
     public async Task<List<ContactImagesDto>?> GetAllImagesByGlassesIdAsync(string blindId)
     {
-        var contacts = await _context.Contacts.Where(c => c.GlassesId == blindId).ToListAsync();
+        var contacts = await _context.Contacts.Where(c => c.GlassesId == blindId).AsNoTracking().ToListAsync();
         if (contacts.Count is 0)
             return null;
 
@@ -297,22 +296,21 @@ public class AccountService(UserManager<ApplicationUser> userManager,
         if (user is null || user.IsDeleted)
             return message = "This User Does Not  Exist";
 
+        var tokens = await _context.DeviceTokens
+            .Where(t => t.UserId == userId)
+            .ExecuteDeleteAsync();
+
         //delete user
         await _userManager.DeleteAsync(user);
         //user.IsDeleted = true;
         //user.LastUpdatedOn = DateTime.Now;
-
-        var tokens = await _context.DeviceTokens.Where(t => t.UserId == userId).ToListAsync();
-
-        _context.DeviceTokens.RemoveRange(tokens);
-        await _context.SaveChangesAsync();
 
         return message;
     }
 
     public async Task<NotificationDto> ManualNotificationAsync(NotificationDto request)
     {
-        if(await _context.Glasses.SingleOrDefaultAsync(g => g.Id == request.GlassesId) is null)
+        if (await _context.Glasses.SingleOrDefaultAsync(g => g.Id == request.GlassesId) is null)
             return new NotificationDto { Message = "This Id Does Not  Exist" };
 
         var notification = new AppNotification
@@ -326,7 +324,7 @@ public class AccountService(UserManager<ApplicationUser> userManager,
             IsRead = false
         };
 
-        await _context.Notifications.AddAsync(notification);
+        await _context.AddAsync(notification);
         await _context.SaveChangesAsync();
 
         return request;
@@ -343,7 +341,7 @@ public class AccountService(UserManager<ApplicationUser> userManager,
         if (!string.IsNullOrEmpty(contact.ImageUrl))
             _imageService.Delete(contact.ImageUrl);
 
-        _context.Contacts.Remove(contact);
+        _context.Remove(contact);
         await _context.SaveChangesAsync();
 
         return message;

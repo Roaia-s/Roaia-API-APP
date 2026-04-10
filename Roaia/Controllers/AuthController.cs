@@ -33,7 +33,12 @@ public class AuthController(IAuthService authService, IConfiguration configurati
         var result = await _authService.GetTokenAsync(dto);
 
         if (!result.IsAuthenticated)
+        {
+            if (result.Message.Contains("locked out"))
+                return StatusCode(403, result.Message);
+
             return BadRequest(result.Message);
+        }
 
         if (!string.IsNullOrEmpty(result.RefreshToken))
             SetRefreshTokenInCookie(result.RefreshToken, result.RefreshTokenExpiration);
@@ -101,17 +106,17 @@ public class AuthController(IAuthService authService, IConfiguration configurati
     }
 
     // Route -> unsubscribeMailNews
-    [HttpPost("unsubscribeMailNews/{email}")]
-    public async Task<IActionResult> UnsubscribeMailNewsAsync(string email)
+    [HttpPost("SubscribeUnSubscribeMailNews/{email}")]
+    public async Task<IActionResult> SubscribeUnSubscribeMailNewsAsync(string email)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var result = await _authService.UnsubscribeMailNewsAsync(email);
+        var result = await _authService.SubscribeUnSubscribeMailNewsAsync(email);
         if (!string.IsNullOrEmpty(result))
             return BadRequest(result);
 
-        return Ok(new { message = "Unsubscribed Successfully" });
+        return Ok();
     }
 
 

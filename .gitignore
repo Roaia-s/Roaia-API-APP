@@ -10,3 +10,6 @@ bin
 */data-mssql
 **/data-mssql
 *.user
+*.log 
+
+/Roaia/roaia-official-fcm.json

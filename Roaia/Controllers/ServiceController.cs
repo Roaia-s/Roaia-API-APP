@@ -1,5 +1,4 @@
-﻿using OpenAI.Chat;
-
+﻿
 namespace Roaia.Controllers;
 [Route("api/[controller]")]
 [ApiController]
@@ -22,25 +21,25 @@ public class ServiceController(IAudioService audioService, IOptions<OpenAISettin
         return Ok(text);
     }
 
-    [HttpGet("start-chat")]
-    public IActionResult StartChat()
-    {
-        ChatClient client = new(_openAISettings.Model, _openAISettings.SecretKey);
+    //[HttpGet("start-chat")]
+    //public IActionResult StartChat()
+    //{
+    //    ChatClient client = new(_openAISettings.Model, _openAISettings.SecretKey);
 
-        var completion = client.CompleteChat("Say 'this is a test.'");
+    //    var completion = client.CompleteChat("Say 'this is a test.'");
 
-        return Ok($"{completion.Value}");
-    }
+    //    return Ok($"{completion.Value}");
+    //}
 
-    [HttpPost("ask-chat")]
-    public IActionResult StartChat(string question)
-    {
-        ChatClient client = new(_openAISettings.Model, _openAISettings.SecretKey);
+    //[HttpPost("ask-chat")]
+    //public IActionResult StartChat(string question)
+    //{
+    //    ChatClient client = new(_openAISettings.Model, _openAISettings.SecretKey);
 
-        var completion = client.CompleteChat(question);
+    //    var completion = client.CompleteChat(question);
 
-        return Ok($"{completion.Value}");
-    }
+    //    return Ok($"{completion.Value}");
+    //}
 
     [HttpPost("process-image")]
     public async Task<IActionResult> ProcessImage(IFormFile image)
